@@ -13,8 +13,8 @@ DB_HOST = "localhost"
 DB_PORT = 5434
 
 SCHEMA = "eleicoes22"
-TABLE_LIMIT = 30       # limit number of tables processed
-COLUMN_LIMIT = 30      # limit number of columns shown in DDL
+TABLE_LIMIT = 30        # limit number of tables processed
+COLUMN_LIMIT = 30       # limit number of columns shown per table
 OUTPUT_PATH = Path("eleicoes22_introspection.md")
 
 
@@ -28,7 +28,7 @@ def connect():
     )
 
 
-def fetch_tables(cur, schema, limit=None):
+def fetch_tables(cur, schema):
     cur.execute(
         """
         SELECT table_name
@@ -38,10 +38,7 @@ def fetch_tables(cur, schema, limit=None):
         """,
         (schema,),
     )
-    tables = [r[0] for r in cur.fetchall()]
-    if limit is not None:
-        return tables[:limit]
-    return tables
+    return [r[0] for r in cur.fetchall()]
 
 
 def estimate_row_count(cur, schema, table):
@@ -58,8 +55,20 @@ def estimate_row_count(cur, schema, table):
     return int(row[0]) if row and row[0] is not None else None
 
 
+def count_columns(cur, schema, table):
+    cur.execute(
+        """
+        SELECT COUNT(*) 
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        """,
+        (schema, table),
+    )
+    return cur.fetchone()[0]
+
+
 def pg_has_tabledef(cur):
-    # Postgres 16+ provides pg_get_tabledef(regclass)
+    # Postgres 16+: pg_get_tabledef(regclass)
     cur.execute(
         """
         SELECT COUNT(*) 
@@ -72,19 +81,13 @@ def pg_has_tabledef(cur):
 
 
 def get_native_tabledef(cur, schema, table):
-    # Uses pg_get_tabledef if present
-    q = sql.SQL("SELECT pg_get_tabledef({}.{}::regclass)")
-    cur.execute(
-        sql.SQL("SELECT pg_get_tabledef(%s::regclass)")
-        ,
-        (f"{schema}.{table}",),
-    )
+    # When available, returns full DDL (no column cap)
+    cur.execute("SELECT pg_get_tabledef(%s::regclass)", (f"{schema}.{table}",))
     r = cur.fetchone()
     return r[0] if r and r[0] else None
 
 
 def fetch_columns_for_fallback(cur, schema, table, limit=COLUMN_LIMIT):
-    # Pull rich column metadata for fallback DDL
     cur.execute(
         """
         SELECT
@@ -129,30 +132,25 @@ def fetch_primary_key_cols(cur, schema, table):
 
 
 def render_type(row):
-    # Build a best-effort textual type from information_schema
     (_ord, _name, data_type, udt_name, char_len, num_prec, num_scale, dt_prec,
      _nullable, _default) = row
 
-    # Prefer information_schema.data_type with decorations where applicable
     if data_type in ("character varying", "character"):
-        if char_len is not None:
-            return f"{data_type}({char_len})"
-        return data_type
+        return f"{data_type}({char_len})" if char_len is not None else data_type
     if data_type in ("numeric", "decimal"):
         if num_prec is not None and num_scale is not None:
             return f"{data_type}({num_prec},{num_scale})"
         if num_prec is not None:
             return f"{data_type}({num_prec})"
         return data_type
-    if data_type in ("timestamp without time zone", "timestamp with time zone",
-                     "time without time zone", "time with time zone"):
-        # include precision if available
-        if dt_prec is not None:
-            return f"{data_type}({dt_prec})"
-        return data_type
-    # Otherwise fall back to info_schema data_type; if super-generic, use udt_name
+    if data_type in (
+        "timestamp without time zone", "timestamp with time zone",
+        "time without time zone", "time with time zone"
+    ):
+        return f"{data_type}({dt_prec})" if dt_prec is not None else data_type
+
     if data_type == "ARRAY" and udt_name:
-        return udt_name  # e.g., _int4
+        return udt_name
     if data_type == "USER-DEFINED" and udt_name:
         return udt_name
     return data_type
@@ -206,32 +204,34 @@ def write_header(f, schema, total_tables, limited_tables):
 def main():
     try:
         with connect() as conn, conn.cursor() as cur, OUTPUT_PATH.open("w", encoding="utf-8") as out:
-            tables_all = fetch_tables(cur, SCHEMA, limit=None)
-            tables = tables_all[:TABLE_LIMIT]
-            write_header(out, SCHEMA, total_tables=len(tables_all), limited_tables=len(tables))
+            all_tables = fetch_tables(cur, SCHEMA)
+            tables = all_tables[:TABLE_LIMIT]
+            write_header(out, SCHEMA, total_tables=len(all_tables), limited_tables=len(tables))
 
             has_native = pg_has_tabledef(cur)
 
             for idx, table in enumerate(tables, 1):
                 est = estimate_row_count(cur, SCHEMA, table)
+                col_count = count_columns(cur, SCHEMA, table)
+
                 out.write(f"## {idx}. {SCHEMA}.{table}\n\n")
-                out.write(f"- Estimated rows: {est if est is not None else 'unknown'}\n\n")
+                out.write(f"- Estimated rows: {est if est is not None else 'unknown'}\n")
+                out.write(f"- Columns: {col_count}\n\n")
+
                 out.write("```sql\n")
                 ddl = None
-                if has_native:
+                # Use native DDL only if present AND column count fits our cap; otherwise fallback
+                if has_native and col_count <= COLUMN_LIMIT:
                     try:
                         ddl = get_native_tabledef(cur, SCHEMA, table)
                     except Exception:
                         ddl = None
                 if ddl is None:
                     ddl = build_fallback_tabledef(cur, SCHEMA, table, COLUMN_LIMIT)
-                else:
-                    # If native DDL has > COLUMN_LIMIT columns and you still want to enforce the cap,
-                    # switch to fallback builder. Native text is kept as-is here.
-                    pass
                 out.write(ddl.strip() + "\n")
                 out.write("```\n\n")
-            print(f"Wrote: {OUTPUT_PATH.resolve()}")
+
+        print(f"Wrote: {OUTPUT_PATH.resolve()}")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
