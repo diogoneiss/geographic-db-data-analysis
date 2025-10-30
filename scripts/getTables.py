@@ -7,6 +7,9 @@ from sqlalchemy import create_engine, text
 import psycopg2
 from psycopg2 import sql
 import pandas as pd
+import numpy as np
+from pandas.api.types import is_integer_dtype, is_float_dtype
+import traceback
 
 DB_NAME = "gis"
 DB_USER = "postgres"
@@ -15,15 +18,13 @@ DB_HOST = "localhost"
 DB_PORT = 5434
 
 SCHEMA = "eleicoes22"
-TABLE_LIMIT = 30        # first N tables (alphabetical)
-COLUMN_LIMIT = 30       # first N columns (ordinal position)
-SAMPLE_ROWS = 5         # number of samples per table
+TABLE_LIMIT = 30
+COLUMN_LIMIT = 30
+SAMPLE_ROWS = 5
 MAX_CELL_LEN = 120
 
 OUTPUT_PATH = Path("eleicoes22_introspection.md")
-
-# Geometry types handled as WKT in samples
-GEOM_UDT_NAMES = {"geometry", "geography"}
+GEOM_UDT_NAMES = {"geometry", "geography"}  # render as WKT in samples
 
 
 def get_engine():
@@ -51,7 +52,8 @@ def fetch_tables(cur, schema):
         """,
         (schema,),
     )
-    return [r[0] for r in cur.fetchall()]
+    rows = cur.fetchall() or []
+    return [r[0] for r in rows]
 
 
 def count_columns(cur, schema, table):
@@ -63,13 +65,11 @@ def count_columns(cur, schema, table):
         """,
         (schema, table),
     )
-    return cur.fetchone()[0]
+    r = cur.fetchone()
+    return int(r[0]) if r else 0
 
 
 def get_first_n_columns_with_types(cur, schema, table, n=COLUMN_LIMIT):
-    """
-    Return first N columns as (name, udt_name) to allow geometry detection.
-    """
     cur.execute(
         """
         SELECT column_name, udt_name
@@ -80,14 +80,11 @@ def get_first_n_columns_with_types(cur, schema, table, n=COLUMN_LIMIT):
         """,
         (schema, table, n),
     )
-    return [(r[0], r[1]) for r in cur.fetchall()]
+    rows = cur.fetchall() or []
+    return [(r[0], r[1]) for r in rows]
 
 
 def estimate_row_count_pg18(cur, schema, table):
-    """
-    Prefer pg_stat_all_tables.n_live_tup on Postgres 18 for a fresher estimate.
-    Fallback to pg_class.reltuples if stats aren’t available.
-    """
     cur.execute(
         """
         SELECT s.n_live_tup
@@ -124,7 +121,8 @@ def pg_has_tabledef(cur):
           AND pg_catalog.pg_function_is_visible(oid)
         """
     )
-    return cur.fetchone()[0] > 0
+    r = cur.fetchone()
+    return bool(r and r[0])
 
 
 def get_native_tabledef(cur, schema, table):
@@ -140,6 +138,18 @@ def _trim_cell(x, max_len=MAX_CELL_LEN):
     if len(s) > max_len:
         return s[: max_len - 1] + "…"
     return s
+
+
+def _format_number(x):
+    if pd.isna(x):
+        return ""
+    if isinstance(x, (int, np.integer)):
+        return str(int(x))
+    if isinstance(x, (float, np.floating)):
+        if np.isfinite(x) and float(x).is_integer():
+            return str(int(x))
+        return np.format_float_positional(float(x), trim='-')
+    return str(x)
 
 
 def fetch_columns_for_fallback(cur, schema, table, limit=COLUMN_LIMIT):
@@ -162,7 +172,7 @@ def fetch_columns_for_fallback(cur, schema, table, limit=COLUMN_LIMIT):
         """,
         (schema, table),
     )
-    rows = cur.fetchall()
+    rows = cur.fetchall() or []
     truncated = False
     if len(rows) > limit:
         rows = rows[:limit]
@@ -183,7 +193,8 @@ def fetch_primary_key_cols(cur, schema, table):
         """,
         (schema, table),
     )
-    return [r[0] for r in cur.fetchall()]
+    rows = cur.fetchall() or []
+    return [r[0] for r in rows]
 
 
 def render_type(row):
@@ -242,6 +253,41 @@ def build_fallback_tabledef(cur, schema, table, column_limit=COLUMN_LIMIT):
     return "\n".join(ddl)
 
 
+def get_table_sizes(cur, schema, table):
+    """
+    Returns (heap_bytes, index_bytes, total_bytes). Uses to_regclass for safety.
+    """
+    fqn = f"{schema}.{table}"
+    cur.execute(
+        """
+        SELECT
+          pg_table_size(to_regclass(%s))      AS heap,
+          pg_indexes_size(to_regclass(%s))    AS indexes,
+          pg_total_relation_size(to_regclass(%s)) AS total
+        """,
+        (fqn, fqn, fqn),
+    )
+    r = cur.fetchone()
+    if not r:
+        return 0, 0, 0
+    # r is a tuple; any of its members can be None if relation is missing
+    heap_b = int(r[0] or 0)
+    idx_b  = int(r[1] or 0)
+    tot_b  = int(r[2] or 0)
+    return heap_b, idx_b, tot_b
+
+
+def _human_bytes(n: int) -> str:
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    v = float(n)
+    idx = 0
+    while v >= 1024 and idx < len(units) - 1:
+        v /= 1024.0
+        idx += 1
+    s = f"{v:.2f}".rstrip("0").rstrip(".")
+    return f"{s} {units[idx]}"
+
+
 def write_header(f, schema, total_tables, limited_tables):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     f.write(f"# Introspection of schema `{schema}`\n\n")
@@ -257,8 +303,9 @@ def write_header(f, schema, total_tables, limited_tables):
 
 def pandas_sample_markdown_sqlalchemy(engine, schema, table, cols_with_types, n=SAMPLE_ROWS):
     """
-    cols_with_types: list[(colname, udt_name)] limited to first N columns.
-    Geometry/geography columns are rendered as ST_AsText(col) AS col.
+    - Geometry/geography columns: ST_AsText(col) AS col
+    - Numeric columns: no scientific notation
+    - Text-ish columns: trimmed to MAX_CELL_LEN
     """
     select_parts = []
     for col, udt in cols_with_types:
@@ -271,9 +318,16 @@ def pandas_sample_markdown_sqlalchemy(engine, schema, table, cols_with_types, n=
     query = text(f'SELECT {select_list} FROM "{schema}"."{table}" ORDER BY random() LIMIT :n;')
     df = pd.read_sql_query(query, engine, params={"n": n})
 
-    # Keep original order and trim
     colnames = [c for c, _ in cols_with_types]
-    df = df[colnames].map(_trim_cell)
+    df = df[colnames].convert_dtypes()
+
+    # Per-column formatting
+    for c in colnames:
+        dtype = df[c].dtype
+        if is_integer_dtype(dtype) or is_float_dtype(dtype):
+            df[c] = df[c].map(_format_number)
+        else:
+            df[c] = df[c].map(_trim_cell)
 
     try:
         return df.to_markdown(index=False)
@@ -296,32 +350,43 @@ def main():
             has_native = pg_has_tabledef(cur)
 
             for idx, table in enumerate(tables, 1):
-                est = estimate_row_count_pg18(cur, SCHEMA, table)
-                col_count = count_columns(cur, SCHEMA, table)
-                cols_with_types = get_first_n_columns_with_types(cur, SCHEMA, table, COLUMN_LIMIT)
-                first_cols = [c for c, _ in cols_with_types]
+                try:
+                    est = estimate_row_count_pg18(cur, SCHEMA, table)
+                    col_count = count_columns(cur, SCHEMA, table)
+                    cols_with_types = get_first_n_columns_with_types(cur, SCHEMA, table, COLUMN_LIMIT)
+                    first_cols = [c for c, _ in cols_with_types]
+                    heap_b, idx_b, tot_b = get_table_sizes(cur, SCHEMA, table)
 
-                out.write(f"## {idx}. {SCHEMA}.{table}\n\n")
-                out.write(f"- Estimated rows: {est if est is not None else 'unknown'}\n")
-                out.write(f"- Columns: {col_count} (showing first {len(first_cols)})\n\n")
+                    out.write(f"## {idx}. {SCHEMA}.{table}\n\n")
+                    out.write(f"- Estimated rows: {est if est is not None else 'unknown'}\n")
+                    out.write(f"- Columns: {col_count} (showing first {len(first_cols)})\n")
+                    out.write(f"- Size (heap): {_human_bytes(heap_b)}\n")
+                    out.write(f"- Size (indexes): {_human_bytes(idx_b)}\n")
+                    out.write(f"- Size (total): {_human_bytes(tot_b)}\n\n")
 
-                # DDL
-                out.write("```sql\n")
-                ddl = None
-                if has_native and col_count <= COLUMN_LIMIT:
-                    try:
-                        ddl = get_native_tabledef(cur, SCHEMA, table)
-                    except Exception:
-                        ddl = None
-                if ddl is None:
-                    ddl = build_fallback_tabledef(cur, SCHEMA, table, COLUMN_LIMIT)
-                out.write(ddl.strip() + "\n")
-                out.write("```\n\n")
+                    # DDL
+                    out.write("```sql\n")
+                    ddl = None
+                    if has_native and col_count <= COLUMN_LIMIT:
+                        try:
+                            ddl = get_native_tabledef(cur, SCHEMA, table)
+                        except Exception:
+                            ddl = None
+                    if ddl is None:
+                        ddl = build_fallback_tabledef(cur, SCHEMA, table, COLUMN_LIMIT)
+                    out.write(ddl.strip() + "\n")
+                    out.write("```\n\n")
 
-                # Samples with WKT for geometry/geography
-                out.write(f"**Sample ({SAMPLE_ROWS} rows, first {len(first_cols)} columns):**\n\n")
-                md_table = pandas_sample_markdown_sqlalchemy(engine, SCHEMA, table, cols_with_types, SAMPLE_ROWS)
-                out.write(md_table + "\n\n---\n\n")
+                    # Samples
+                    out.write(f"**Sample ({SAMPLE_ROWS} rows, first {len(first_cols)} columns):**\n\n")
+                    md_table = pandas_sample_markdown_sqlalchemy(engine, SCHEMA, table, cols_with_types, SAMPLE_ROWS)
+                    out.write(md_table + "\n\n---\n\n")
+
+                except Exception as per_table_exc:
+                    # Make the failing table obvious, then continue with the next one.
+                    out.write(f"⚠️ **Error processing {SCHEMA}.{table}:** {per_table_exc}\n\n")
+                    out.write("```\n" + "".join(traceback.format_exc()) + "```\n\n---\n\n")
+                    continue
 
         print(f"Wrote: {OUTPUT_PATH.resolve()}")
     except Exception as e:
