@@ -18,6 +18,9 @@ SCHEMA = "eleicoes22"
 TABLE_LIMIT = 30        # first N tables (alphabetical)
 COLUMN_LIMIT = 30       # first N columns (ordinal position)
 SAMPLE_ROWS = 5         # number of samples per table
+MAX_CELL_LEN = 120
+
+
 OUTPUT_PATH = Path("eleicoes22_introspection.md")
 
 def get_engine():
@@ -128,6 +131,13 @@ def get_native_tabledef(cur, schema, table):
     r = cur.fetchone()
     return r[0] if r and r[0] else None
 
+def _trim_cell(x, max_len=MAX_CELL_LEN):
+    if pd.isna(x):
+        return ""
+    s = str(x)
+    if len(s) > max_len:
+        return s[: max_len - 1] + "…"
+    return s
 
 def fetch_columns_for_fallback(cur, schema, table, limit=COLUMN_LIMIT):
     cur.execute(
@@ -248,6 +258,8 @@ def pandas_sample_markdown_sqlalchemy(engine, schema, table, colnames, n=SAMPLE_
     query = text(f'SELECT {quoted_cols} FROM "{schema}"."{table}" ORDER BY random() LIMIT :n;')
     df = pd.read_sql_query(query, engine, params={"n": n})
     df = df[colnames]  # ensure only the first N columns
+    df = df.map(_trim_cell)  # <-- trims any value > MAX_CELL_LEN
+
     try:
         return df.to_markdown(index=False)
     except Exception as e:
