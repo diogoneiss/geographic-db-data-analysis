@@ -20,12 +20,14 @@ COLUMN_LIMIT = 30       # first N columns (ordinal position)
 SAMPLE_ROWS = 5         # number of samples per table
 MAX_CELL_LEN = 120
 
-
 OUTPUT_PATH = Path("eleicoes22_introspection.md")
+
+# Geometry types handled as WKT in samples
+GEOM_UDT_NAMES = {"geometry", "geography"}
+
 
 def get_engine():
     url = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    # echo=False to silence SQL logs; pool_pre_ping keeps connections fresh
     return create_engine(url, pool_pre_ping=True)
 
 
@@ -64,13 +66,13 @@ def count_columns(cur, schema, table):
     return cur.fetchone()[0]
 
 
-def get_first_n_columns(cur, schema, table, n=COLUMN_LIMIT):
+def get_first_n_columns_with_types(cur, schema, table, n=COLUMN_LIMIT):
     """
-    Returns the first N column names in ordinal order.
+    Return first N columns as (name, udt_name) to allow geometry detection.
     """
     cur.execute(
         """
-        SELECT column_name
+        SELECT column_name, udt_name
         FROM information_schema.columns
         WHERE table_schema = %s AND table_name = %s
         ORDER BY ordinal_position
@@ -78,7 +80,7 @@ def get_first_n_columns(cur, schema, table, n=COLUMN_LIMIT):
         """,
         (schema, table, n),
     )
-    return [r[0] for r in cur.fetchall()]
+    return [(r[0], r[1]) for r in cur.fetchall()]
 
 
 def estimate_row_count_pg18(cur, schema, table):
@@ -100,7 +102,6 @@ def estimate_row_count_pg18(cur, schema, table):
     if r and r[0] is not None:
         return int(r[0])
 
-    # Fallback to reltuples (coarser estimate if not ANALYZEd recently)
     cur.execute(
         """
         SELECT reltuples::bigint
@@ -131,6 +132,7 @@ def get_native_tabledef(cur, schema, table):
     r = cur.fetchone()
     return r[0] if r and r[0] else None
 
+
 def _trim_cell(x, max_len=MAX_CELL_LEN):
     if pd.isna(x):
         return ""
@@ -138,6 +140,7 @@ def _trim_cell(x, max_len=MAX_CELL_LEN):
     if len(s) > max_len:
         return s[: max_len - 1] + "…"
     return s
+
 
 def fetch_columns_for_fallback(cur, schema, table, limit=COLUMN_LIMIT):
     cur.execute(
@@ -252,18 +255,29 @@ def write_header(f, schema, total_tables, limited_tables):
     f.write("\n---\n\n")
 
 
-def pandas_sample_markdown_sqlalchemy(engine, schema, table, colnames, n=SAMPLE_ROWS):
-    # Build a safe, quoted column list (identifiers cannot be bound as params)
-    quoted_cols = ", ".join([f'"{c}"' for c in colnames])
-    query = text(f'SELECT {quoted_cols} FROM "{schema}"."{table}" ORDER BY random() LIMIT :n;')
+def pandas_sample_markdown_sqlalchemy(engine, schema, table, cols_with_types, n=SAMPLE_ROWS):
+    """
+    cols_with_types: list[(colname, udt_name)] limited to first N columns.
+    Geometry/geography columns are rendered as ST_AsText(col) AS col.
+    """
+    select_parts = []
+    for col, udt in cols_with_types:
+        if udt in GEOM_UDT_NAMES:
+            select_parts.append(f'ST_AsText("{schema}"."{table}"."{col}") AS "{col}"')
+        else:
+            select_parts.append(f'"{schema}"."{table}"."{col}"')
+    select_list = ", ".join(select_parts)
+
+    query = text(f'SELECT {select_list} FROM "{schema}"."{table}" ORDER BY random() LIMIT :n;')
     df = pd.read_sql_query(query, engine, params={"n": n})
-    df = df[colnames]  # ensure only the first N columns
-    df = df.map(_trim_cell)  # <-- trims any value > MAX_CELL_LEN
+
+    # Keep original order and trim
+    colnames = [c for c, _ in cols_with_types]
+    df = df[colnames].map(_trim_cell)
 
     try:
         return df.to_markdown(index=False)
-    except Exception as e:
-        print("Fallback, error generating markdown:", e)
+    except Exception:
         headers = "| " + " | ".join(colnames) + " |"
         sep = "| " + " | ".join(["---"] * len(colnames)) + " |"
         rows = ["| " + " | ".join("" if pd.isna(v) else str(v) for v in r.tolist()) + " |"
@@ -273,7 +287,7 @@ def pandas_sample_markdown_sqlalchemy(engine, schema, table, colnames, n=SAMPLE_
 
 def main():
     try:
-        engine = get_engine() 
+        engine = get_engine()
         with connect() as conn, conn.cursor() as cur, OUTPUT_PATH.open("w", encoding="utf-8") as out:
             all_tables = fetch_tables(cur, SCHEMA)
             tables = all_tables[:TABLE_LIMIT]
@@ -284,13 +298,14 @@ def main():
             for idx, table in enumerate(tables, 1):
                 est = estimate_row_count_pg18(cur, SCHEMA, table)
                 col_count = count_columns(cur, SCHEMA, table)
-                first_cols = get_first_n_columns(cur, SCHEMA, table, COLUMN_LIMIT)
+                cols_with_types = get_first_n_columns_with_types(cur, SCHEMA, table, COLUMN_LIMIT)
+                first_cols = [c for c, _ in cols_with_types]
 
                 out.write(f"## {idx}. {SCHEMA}.{table}\n\n")
                 out.write(f"- Estimated rows: {est if est is not None else 'unknown'}\n")
                 out.write(f"- Columns: {col_count} (showing first {len(first_cols)})\n\n")
 
-                # DDL (cap columns if native DDL not available or exceeds cap)
+                # DDL
                 out.write("```sql\n")
                 ddl = None
                 if has_native and col_count <= COLUMN_LIMIT:
@@ -303,8 +318,9 @@ def main():
                 out.write(ddl.strip() + "\n")
                 out.write("```\n\n")
 
+                # Samples with WKT for geometry/geography
                 out.write(f"**Sample ({SAMPLE_ROWS} rows, first {len(first_cols)} columns):**\n\n")
-                md_table = pandas_sample_markdown_sqlalchemy(engine, SCHEMA, table, first_cols, SAMPLE_ROWS)
+                md_table = pandas_sample_markdown_sqlalchemy(engine, SCHEMA, table, cols_with_types, SAMPLE_ROWS)
                 out.write(md_table + "\n\n---\n\n")
 
         print(f"Wrote: {OUTPUT_PATH.resolve()}")
