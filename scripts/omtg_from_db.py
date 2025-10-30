@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import sys
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 import xml.etree.ElementTree as ET
 
 from tqdm import tqdm
 
 # ---- reuse your helpers / constants from getTables.py (same folder) ----
 from getTables import (
-    SCHEMA, COLUMN_LIMIT, GEOM_UDT_NAMES,
+    SCHEMA, TABLE_LIMIT, COLUMN_LIMIT, GEOM_UDT_NAMES,
     IGNORE_PREFIX,                # e.g., "ignore_"
     get_engine, connect,
     fetch_tables, fetch_columns_for_fallback, fetch_primary_key_cols
@@ -22,6 +22,13 @@ IGNORE_TABLES = {
     # "some_table_to_skip",
 }
 
+# Hard cap for attributes in OMT-G (first N columns only)
+# We use the stricter between this cap and your COLUMN_LIMIT
+ATTR_COL_CAP = 20
+
+# Some importers only accept a single-line XML. Toggle this on if needed.
+COMPACT_SINGLE_LINE = True
+
 # Rough auto layout when you don’t care about exact positions
 GRID_CELL_W = 260
 GRID_CELL_H = 160
@@ -31,7 +38,7 @@ GRID_START_Y = 160
 # ----------------------------------------
 
 
-def autolayout(idx: int) -> Tuple[int, int]:
+def autolayout(idx: int) -> tuple[int, int]:
     r = idx // GRID_COLS
     c = idx % GRID_COLS
     top  = GRID_START_Y + r * GRID_CELL_H
@@ -55,8 +62,6 @@ def detect_has_geometry(col_rows: List[Tuple]) -> bool:
 def map_col_to_omtg_type(data_type: str, udt_name: str) -> str:
     """
     Minimal attribute typing for the XML body (the example uses TEXT/INTEGER).
-    We keep it simple: GEOMETRY -> 'GEOMETRY', numeric -> 'INTEGER'/'NUMERIC',
-    boolean -> 'BOOLEAN', else 'TEXT'.
     """
     dt = (data_type or "").lower()
     udt = (udt_name or "").lower()
@@ -75,6 +80,7 @@ def map_col_to_omtg_type(data_type: str, udt_name: str) -> str:
 def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
     """
     Build the OMT-G XML document like your example, based on DB catalog only.
+    Applies per-table column cap = min(ATTR_COL_CAP, COLUMN_LIMIT).
     """
     print(f"[build] Creating XML document for schema '{schema}' with {len(tables)} tables…")
     root = ET.Element("omtg-conceptual-schema")
@@ -85,11 +91,19 @@ def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
     relationships_el = ET.SubElement(root, "relationships")  # left empty on purpose
 
     grid_idx = 0
+    per_table_cap = min(ATTR_COL_CAP, max(1, COLUMN_LIMIT))
+    print(f"[build] Attribute column cap: first {per_table_cap} columns per table (min of ATTR_COL_CAP={ATTR_COL_CAP} and COLUMN_LIMIT={COLUMN_LIMIT})")
 
     for tbl in tqdm(tables, desc="Emit classes", unit="cls"):
         print(f"  [table] {schema}.{tbl}: fetching columns…")
-        col_rows, _ = fetch_columns_for_fallback(cur, schema, tbl, limit=10_000)  # take all cols
-        print(f"    -> {len(col_rows)} columns found")
+        # pull all visible columns, then cap locally
+        col_rows, _ = fetch_columns_for_fallback(cur, schema, tbl, limit=10_000)
+        total_cols = len(col_rows)
+        if total_cols > per_table_cap:
+            print(f"    -> {total_cols} columns found; capping to first {per_table_cap}")
+            col_rows = col_rows[:per_table_cap]
+        else:
+            print(f"    -> {total_cols} columns found; no cap applied")
 
         has_geom = detect_has_geometry(col_rows)
         ctype = "polygon" if has_geom else "conventional"
@@ -112,7 +126,7 @@ def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
 
         attrs_el = ET.SubElement(class_el, "attributes")
 
-        # attributes from DB columns
+        # attributes from DB columns (capped)
         for row in col_rows:
             # row = (ord, name, data_type, udt_name, char_len, num_prec, num_scale, dt_prec, is_nullable, default)
             colname   = row[1]
@@ -125,7 +139,11 @@ def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
             if colname in pk_set:
                 ET.SubElement(attr_el, "key").text = "true"
 
-        print(f"    -> attributes emitted: {len(col_rows)}")
+        if total_cols > per_table_cap:
+            # leave a hint in the XML as a comment for future manual tweaks
+            attrs_el.append(ET.Comment(f" NOTE: attributes truncated to first {per_table_cap} of {total_cols} "))
+
+        print(f"    -> attributes emitted: {len(col_rows)} (of {total_cols})")
         # done one class
 
     print("[build] XML tree completed")
@@ -135,44 +153,48 @@ def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
 def main():
     try:
         print("[init] Connecting to database…")
-        engine = get_engine()  # not strictly needed; keeps parity w/ your helpers
+        _ = get_engine()  # keep parity with your helpers (not strictly required here)
         with connect() as conn, conn.cursor() as cur:
             print(f"[init] Connected. Reading tables from schema '{SCHEMA}'…")
             all_tables = fetch_tables(cur, SCHEMA)
             print(f"[init] Found {len(all_tables)} base tables in '{SCHEMA}'")
 
             # apply ignores
-            selected = []
-            limit = 3
-            count = 0
+            filtered = []
             for t in all_tables:
-                if limit and count >= limit:
-                    print(f"  [stop] reached limit of {limit} tables for demo purposes")
-                    break
                 if t.startswith(IGNORE_PREFIX):
                     print(f"  [skip] {t} (prefix {IGNORE_PREFIX})")
                     continue
                 if t in IGNORE_TABLES:
                     print(f"  [skip] {t} (listed in IGNORE_TABLES)")
                     continue
-                selected.append(t)
-                count += 1
+                filtered.append(t)
+
+            # apply your table limit (0 or None = no cap)
+            if TABLE_LIMIT and TABLE_LIMIT > 0:
+                selected = filtered[:TABLE_LIMIT]
+                print(f"[limit] TABLE_LIMIT={TABLE_LIMIT}: selected {len(selected)} / {len(filtered)} tables")
+            else:
+                selected = filtered
+                print(f"[limit] No TABLE_LIMIT cap: selected all {len(selected)} tables")
 
             print(f"[init] Will materialize {len(selected)} tables -> XML")
             tree = build_omtg_xml(cur, SCHEMA, selected)
 
-        # pretty print
+        # write XML
         print(f"[write] Writing XML to: {OUTPUT_XML}")
-        # ElementTree doesn't pretty-print by default; do a minimal indent:
-        pretty_print = False
-        if pretty_print:
-            try:
-                ET.indent(tree, space="  ")  # Python 3.9+
-            except Exception:
-                pass
+        # Don’t pretty print (some importers don’t like whitespace/indentation)
         tree.write(OUTPUT_XML, encoding="UTF-8", xml_declaration=True)
-        print("[done] XML generated successfully.")
 
+        # Optionally collapse to single line (some tools only accept a one-line file)
+        if COMPACT_SINGLE_LINE:
+            print("[write] Collapsing XML to a single line for importer compatibility")
+            content = OUTPUT_XML.read_text(encoding="UTF-8")
+            # strip each line, then join without separators
+            single_line = "".join(line.strip() for line in content.splitlines())
+            OUTPUT_XML.write_text(single_line, encoding="UTF-8")
+
+        print("[done] XML generated successfully.")
     except Exception as e:
         print(f"[error] {e}")
         sys.exit(1)

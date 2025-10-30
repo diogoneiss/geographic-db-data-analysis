@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omtg-conceptual-schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="omtg-schema-template.xsd">
+  <classes>
+    <class>
+      <name>exemplo_poligono</name>
+      <top>190</top>
+      <left>270</left>
+      <type>conventional</type>
+      <attributes>
+        <!-- no columns found / table missing -->
+      </attributes>
+    </class>
+    <class>
+      <name>exemplo_xml_1</name>
+      <top>280</top>
+      <left>720</left>
+      <type>conventional</type>
+      <attributes>
+        <!-- no columns found / table missing -->
+      </attributes>
+    </class>
+    <class>
+      <name>exemplo_ponto</name>
+      <top>440</top>
+      <left>690</left>
+      <type>conventional</type>
+      <attributes>
+        <!-- no columns found / table missing -->
+      </attributes>
+    </class>
+    <class>
+      <name>tabela_normal</name>
+      <top>500</top>
+      <left>290</left>
+      <type>conventional</type>
+      <attributes>
+        <!-- no columns found / table missing -->
+      </attributes>
+    </class>
+  </classes>
+  <!-- Note: relationships not re-emitted; keep your original file or edit by hand -->
+  <relationships>
+  </relationships>
+</omtg-conceptual-schema>
