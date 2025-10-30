@@ -14,6 +14,7 @@ from tqdm import tqdm
 from getTables import (  # rename if your file has a different name/module
     DB_NAME, DB_HOST, DB_PORT, SCHEMA, TABLE_LIMIT, COLUMN_LIMIT,
     NULL_STR, GEOM_UDT_NAMES,
+    IGNORE_PREFIX,
     get_engine, connect,
     fetch_tables,
     get_first_n_columns_with_types,
@@ -35,7 +36,7 @@ IGNORE_TABLES = {
     #"br_ibge_censo_2022_populacao_idade_sexo",
 }
 
-IGNORE_PREFIX = "ignore_"
+
 
 # ---------- Fast iteration toggle ----------
 FAST_MODE  = False   # set True to stop early
@@ -138,10 +139,14 @@ def main():
     try:
         engine = get_engine()
         with connect() as conn, conn.cursor() as cur, OUTPUT_STATS.open("w", encoding="utf-8") as out:
-            all_tables = [t for t in fetch_tables(cur, SCHEMA) if t not in IGNORE_TABLES]
+            database_tables = fetch_tables(cur, SCHEMA)
+            all_tables = [t for t in database_tables if t not in IGNORE_TABLES and not t.startswith(IGNORE_PREFIX)]
             tables = all_tables[:TABLE_LIMIT]
 
-            write_stats_header(out, SCHEMA, len(all_tables), list(IGNORE_TABLES))
+            #ignored tables are those left out from the full list and after the limit
+            ignored_tables = set(database_tables) - set(tables)
+
+            write_stats_header(out, SCHEMA, len(all_tables), list(ignored_tables))
 
             processed = 0
             for idx, table in enumerate(tqdm(tables, desc="Stats", unit="tbl"), start=1):

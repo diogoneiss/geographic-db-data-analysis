@@ -30,6 +30,7 @@ OUTPUT_PATH = Path("eleicoes22_introspection.md")
 
 GEOM_UDT_NAMES = {"geometry", "geography"}  # render as WKT in samples
 
+IGNORE_PREFIX = "ignore_"
 
 # ---------- Connections ----------
 def get_engine():
@@ -395,7 +396,10 @@ def main():
     try:
         engine = get_engine()
         with connect() as conn, conn.cursor() as cur, OUTPUT_PATH.open("w", encoding="utf-8") as out:
-            tables_all = fetch_tables(cur, SCHEMA)
+        
+            tables_all = [t for t in fetch_tables(cur, SCHEMA) if not t.startswith(IGNORE_PREFIX)]
+
+
             views_all = fetch_views(cur, SCHEMA)
             matviews_all = fetch_matviews(cur, SCHEMA)
 
