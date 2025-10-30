@@ -11,10 +11,7 @@ from sqlalchemy import text
 from tqdm import tqdm
 
 # ---- Reuse helpers from your existing script in the same folder ----
-# Adjust the module name below to match your existing file if needed.
-# If your main file is named differently, e.g., schema_introspect.py,
-# change the import accordingly.
-from getTables import (  # <-- rename if your file has a different name
+from getTables import (  # rename if your file has a different name/module
     DB_NAME, DB_HOST, DB_PORT, SCHEMA, TABLE_LIMIT, COLUMN_LIMIT,
     NULL_STR, GEOM_UDT_NAMES,
     get_engine, connect,
@@ -27,32 +24,43 @@ from getTables import (  # <-- rename if your file has a different name
 OUTPUT_STATS = Path("eleicoes22_stats.md")
 
 # ---------- Typing sets (aligned with your main script) ----------
-NUMERIC_UDT = {"int2","int4","int8","float4","float8","numeric","money"}
-DATE_UDT    = {"date","timestamp","timestamptz","time","timetz"}
-BOOL_UDT    = {"bool"}
-TEXTLIKE_UDT= {"text","varchar","bpchar","uuid"}
+NUMERIC_UDT  = {"int2","int4","int8","float4","float8","numeric","money"}
+DATE_UDT     = {"date","timestamp","timestamptz","time","timetz"}
+BOOL_UDT     = {"bool"}
+TEXTLIKE_UDT = {"text","varchar","bpchar","uuid"}
 
-# ---------- Ignore list ----------
-# Add names (without schema) to skip in the stats run
+# ---------- Ignore list (tables) ----------
 IGNORE_TABLES = {
-    "votacao_secao_2022_sc",
-    "br_ibge_censo_2022_populacao_idade_sexo"
-
+    #"votacao_secao_2022_sc",
+    #"br_ibge_censo_2022_populacao_idade_sexo",
 }
 
+IGNORE_PREFIX = "ignore_"
+
+# ---------- Fast iteration toggle ----------
+FAST_MODE  = False   # set True to stop early
+FAST_LIMIT = 5      # number of tables to process when FAST_MODE is True
+
 # ---------- Helpers reused/extended ----------
+def is_id_col(name: str) -> bool:
+    n = name.lower()
+    return n.startswith("id_") or n.endswith("_id")
+
 def split_columns_for_stats(cur, schema: str, table: str, limit: int = COLUMN_LIMIT):
     cols = get_first_n_columns_with_types(cur, schema, table, limit)
-    numeric, categorical = [], []
+    numeric, categorical, skipped_ids = [], [], []
     for name, udt in cols:
         if udt in GEOM_UDT_NAMES:
+            continue
+        if is_id_col(name):
+            skipped_ids.append(name)
             continue
         if udt in NUMERIC_UDT:
             numeric.append((name, udt))
         elif udt in TEXTLIKE_UDT or udt in DATE_UDT or udt in BOOL_UDT:
             categorical.append((name, udt))
         # skip json/array/other exotic types for profiling
-    return numeric, categorical
+    return numeric, categorical, skipped_ids
 
 def numeric_stats_sql(schema: str, table: str, num_cols: List[Tuple[str,str]]) -> str:
     fqn = f'"{schema}"."{table}"'
@@ -75,7 +83,6 @@ def numeric_stats_sql(schema: str, table: str, num_cols: List[Tuple[str,str]]) -
 
 def numeric_outliers_query(schema: str, table: str, col: str, low: float, high: float) -> str:
     fqn = f'"{schema}"."{table}"'
-    # Render numeric thresholds inline for the persisted SQL block
     return (
         f'SELECT SUM(CASE WHEN "{col}" < {low} OR "{col}" > {high} '
         f'THEN 1 ELSE 0 END)::bigint AS outliers FROM {fqn};'
@@ -98,7 +105,7 @@ def categorical_topk_sql(schema: str, table: str, col: str, k: int = 5) -> str:
 
 def markdown_table(headers: List[str], rows: List[List[Any]]) -> str:
     head = "| " + " | ".join(headers) + " |\n"
-    sep = "| " + " | ".join(["---"] * len(headers)) + " |\n"
+    sep  = "| " + " | ".join(["---"] * len(headers)) + " |\n"
     lines = []
     for r in rows:
         cells = []
@@ -121,8 +128,9 @@ def write_stats_header(out, schema: str, total_tables: int, ignored: List[str]):
     out.write(f"- Tables discovered: {total_tables}\n")
     out.write(f"- Tables profiled: up to {TABLE_LIMIT} (cap)\n")
     out.write(f"- Ignored tables: {', '.join(sorted(ignored)) if ignored else '(none)'}\n")
-    out.write(f"- Columns per table considered: up to {COLUMN_LIMIT} (geometry/geography skipped)\n")
+    out.write(f"- Columns per table considered: up to {COLUMN_LIMIT} (geometry/geography skipped; id_* and *_id skipped)\n")
     out.write(f"- Outliers = Tukey fences (Q1−1.5·IQR, Q3+1.5·IQR)\n")
+    out.write(f"- Fast mode: {FAST_MODE} (limit={FAST_LIMIT})\n")
     out.write("\n---\n\n")
 
 # ---------- Main CLI ----------
@@ -131,43 +139,50 @@ def main():
         engine = get_engine()
         with connect() as conn, conn.cursor() as cur, OUTPUT_STATS.open("w", encoding="utf-8") as out:
             all_tables = [t for t in fetch_tables(cur, SCHEMA) if t not in IGNORE_TABLES]
-            print("All tables:", all_tables)
-            print("Ignored tables:", IGNORE_TABLES)
             tables = all_tables[:TABLE_LIMIT]
 
             write_stats_header(out, SCHEMA, len(all_tables), list(IGNORE_TABLES))
 
-            for table in tqdm(tables, desc="Stats", unit="tbl"):
+            processed = 0
+            for idx, table in enumerate(tqdm(tables, desc="Stats", unit="tbl"), start=1):
+                if FAST_MODE and processed >= FAST_LIMIT:
+                    break
                 table_start = time.perf_counter()
                 try:
-                    out.write(f"## {SCHEMA}.{table}\n\n")
+                    out.write(f"## {idx}. {SCHEMA}.{table}\n\n")
 
                     # Column splits
                     split_start = time.perf_counter()
-                    num_cols, cat_cols = split_columns_for_stats(cur, SCHEMA, table, COLUMN_LIMIT)
+                    num_cols, cat_cols, skipped_ids = split_columns_for_stats(cur, SCHEMA, table, COLUMN_LIMIT)
                     split_time = time.perf_counter() - split_start
 
-                    # ---------- Numeric aggregate stats (single query) ----------
+                    if skipped_ids:
+                        out.write(f"_Skipped ID-like columns (id_*, *_id):_ `{', '.join(skipped_ids)}`\n\n")
+
+                    # ---------- Numeric aggregate stats ----------
                     numeric_time = 0.0
                     outlier_rows: List[List[Any]] = []
                     numeric_sql_rendered = ""
                     if num_cols:
                         agg_sql = numeric_stats_sql(SCHEMA, table, num_cols)
                         numeric_sql_rendered = agg_sql
+
                         t0 = time.perf_counter()
                         df_agg = pd.read_sql_query(text(agg_sql), engine)
                         numeric_time = time.perf_counter() - t0
 
                         row = df_agg.iloc[0].to_dict()
-                        headers = ["column","non_null","nulls","distinct","mean","stddev","min","p25","median","p75","max"]
+                        headers = ["column","non_null","nulls","nulls_%","distinct","mean","stddev","min","p25","median","p75","max"]
                         rows = []
                         outliers_time_total = 0.0
 
-                        # Per-column Tukey outliers
                         outlier_headers = ["column", "low", "high", "outliers", "time (s)"]
                         for col, _ in num_cols:
-                            non_null = row.get(f"{col}__non_null")
-                            nulls    = row.get(f"{col}__nulls")
+                            non_null = int(row.get(f"{col}__non_null") or 0)
+                            nulls    = int(row.get(f"{col}__nulls") or 0)
+                            total    = non_null + nulls
+                            nulls_pct = (nulls / total * 100.0) if total > 0 else 0.0
+
                             distinct = row.get(f"{col}__distinct")
                             mean     = row.get(f"{col}__mean")
                             stddev   = row.get(f"{col}__stddev")
@@ -177,7 +192,7 @@ def main():
                             p75      = row.get(f"{col}__p75")
                             vmax     = row.get(f"{col}__max")
 
-                            rows.append([col, non_null, nulls, distinct, mean, stddev, vmin, p25, med, p75, vmax])
+                            rows.append([col, non_null, nulls, round(nulls_pct, 4), distinct, mean, stddev, vmin, p25, med, p75, vmax])
 
                             # outliers
                             if p25 is not None and p75 is not None:
@@ -205,12 +220,11 @@ def main():
                         out.write("**SQL (numeric aggregate)**\n\n```sql\n")
                         out.write(numeric_sql_rendered.strip() + "\n```\n\n")
 
-                        # Show a template for outlier SQL (thresholds vary per column)
+                        # Template for outlier SQL
                         out.write("**SQL template (numeric outliers per column)**\n\n```sql\n")
                         out.write('SELECT SUM(CASE WHEN "{col}" < {low} OR "{col}" > {high} THEN 1 ELSE 0 END)::bigint AS outliers\n'
                                   f'FROM "{SCHEMA}"."{table}";\n')
                         out.write("```\n\n")
-
                     else:
                         out.write("_No numeric columns considered._\n\n")
 
@@ -218,43 +232,50 @@ def main():
                     categorical_time = 0.0
                     cat_summary_rows: List[List[Any]] = []
                     cat_sql_blocks: List[str] = []
-                    cat_topk_blocks: Dict[str, str] = {}
                     if cat_cols:
+                        out.write("### Categorical columns\n\n")
+
                         # summary table
-                        head = ["column","non_null","nulls","distinct"]
+                        head = ["column","non_null","nulls","nulls_%","distinct"]
                         for col, _udt in cat_cols:
                             qsum = categorical_summary_sql(SCHEMA, table, col)
                             t0 = time.perf_counter()
                             rsum = pd.read_sql_query(text(qsum), engine).iloc[0]
                             dt = time.perf_counter() - t0
                             categorical_time += dt
-                            cat_summary_rows.append([col, int(rsum["non_null"]), int(rsum["nulls"]), int(rsum["distinct"])])
+
+                            non_null = int(rsum["non_null"])
+                            nulls    = int(rsum["nulls"])
+                            total    = non_null + nulls
+                            nulls_pct = (nulls / total * 100.0) if total > 0 else 0.0
+
+                            cat_summary_rows.append([col, non_null, nulls, round(nulls_pct, 4), int(rsum["distinct"])])
                             cat_sql_blocks.append(qsum.strip() + f"\n-- time: {dt:.6f}s")
 
-                        out.write("### Categorical columns\n\n")
                         out.write(markdown_table(head, cat_summary_rows) + "\n")
 
-                        # top-5 values per categorical column
+                        # top-5 values per categorical column (skip if all distinct)
                         for col, _udt in cat_cols:
-                            sout = []
-                            sout.append(f"**Top-5 values for `{col}`**\n")
                             qtop = categorical_topk_sql(SCHEMA, table, col, k=5)
                             t0 = time.perf_counter()
                             df_top = pd.read_sql_query(text(qtop), engine)
                             dt = time.perf_counter() - t0
                             categorical_time += dt
 
-                            if df_top.empty:
-                                sout.append("_No values (all NULL or empty table)._ \n")
+                            # If every non-null value is unique, max count will be 1
+                            if not df_top.empty and int(df_top["cnt"].max()) == 1:
+                                out.write(f"**Top-5 values for `{col}`** — _All non-null values are distinct; omitting list._\n\n")
                             else:
-                                df_top["value"] = df_top["value"].map(lambda x: _trim_cell(x))
-                                df_top["cnt"] = df_top["cnt"].map(lambda x: _format_number(x))
-                                sout.append(df_top.to_markdown(index=False) + "\n")
-                            # include SQL for this top-k
-                            sout.append("**SQL (top-k)**\n\n```sql\n" + qtop.strip() + f"\n-- time: {dt:.6f}s\n```\n")
-                            out.write("\n".join(sout))
+                                out.write(f"**Top-5 values for `{col}`**\n\n")
+                                if df_top.empty:
+                                    out.write("_No values (all NULL or empty table)._ \n\n")
+                                else:
+                                    df_top["value"] = df_top["value"].map(lambda x: _trim_cell(x))
+                                    df_top["cnt"] = df_top["cnt"].map(lambda x: _format_number(x))
+                                    out.write(df_top.to_markdown(index=False) + "\n\n")
+                                out.write("**SQL (top-k)**\n\n```sql\n" + qtop.strip() + f"\n-- time: {dt:.6f}s\n```\n\n")
 
-                        # include the summary SQLs (to avoid overloading the doc, group them)
+                        # include the summary SQLs
                         out.write("**SQL (categorical summaries)**\n\n```sql\n")
                         out.write("\n\n".join(cat_sql_blocks) + "\n```\n\n")
                     else:
@@ -272,6 +293,8 @@ def main():
                     ]
                     out.write(markdown_table(["step","time (s)"], trows) + "\n")
                     out.write("---\n\n")
+
+                    processed += 1
 
                 except Exception as ex:
                     out.write(f"⚠️ **Error profiling {SCHEMA}.{table}:** {ex}\n\n")
