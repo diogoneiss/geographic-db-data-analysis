@@ -131,18 +131,19 @@ def get_native_tabledef(cur, schema, table):
     return r[0] if r and r[0] else None
 
 
+NULL_STR = ""   # or "NULL", "—", "(na)", etc.
+
 def _trim_cell(x, max_len=MAX_CELL_LEN):
     if pd.isna(x):
-        return ""
+        return NULL_STR
     s = str(x)
     if len(s) > max_len:
         return s[: max_len - 1] + "…"
     return s
 
-
 def _format_number(x):
     if pd.isna(x):
-        return ""
+        return NULL_STR
     if isinstance(x, (int, np.integer)):
         return str(int(x))
     if isinstance(x, (float, np.floating)):
@@ -150,6 +151,7 @@ def _format_number(x):
             return str(int(x))
         return np.format_float_positional(float(x), trim='-')
     return str(x)
+
 
 
 def fetch_columns_for_fallback(cur, schema, table, limit=COLUMN_LIMIT):
@@ -319,7 +321,6 @@ def pandas_sample_markdown_sqlalchemy(engine, schema, table, cols_with_types, n=
     df = pd.read_sql_query(query, engine, params={"n": n})
 
     colnames = [c for c, _ in cols_with_types]
-    df = df[colnames].convert_dtypes()
 
     # Per-column formatting
     for c in colnames:
