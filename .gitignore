@@ -1,0 +1,9 @@
+*.zip
+*.csv
+*.pdf
+*.xlsx
+
+*dump*.sql
+*.qgz
+
+data/
