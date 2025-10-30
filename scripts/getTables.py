@@ -2,9 +2,11 @@
 import sys
 from datetime import datetime
 from pathlib import Path
+from sqlalchemy import create_engine, text
 
 import psycopg2
 from psycopg2 import sql
+import pandas as pd
 
 DB_NAME = "gis"
 DB_USER = "postgres"
@@ -13,9 +15,15 @@ DB_HOST = "localhost"
 DB_PORT = 5434
 
 SCHEMA = "eleicoes22"
-TABLE_LIMIT = 30        # limit number of tables processed
-COLUMN_LIMIT = 30       # limit number of columns shown per table
+TABLE_LIMIT = 30        # first N tables (alphabetical)
+COLUMN_LIMIT = 30       # first N columns (ordinal position)
+SAMPLE_ROWS = 5         # number of samples per table
 OUTPUT_PATH = Path("eleicoes22_introspection.md")
+
+def get_engine():
+    url = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    # echo=False to silence SQL logs; pool_pre_ping keeps connections fresh
+    return create_engine(url, pool_pre_ping=True)
 
 
 def connect():
@@ -41,24 +49,10 @@ def fetch_tables(cur, schema):
     return [r[0] for r in cur.fetchall()]
 
 
-def estimate_row_count(cur, schema, table):
-    cur.execute(
-        """
-        SELECT reltuples::bigint AS estimate
-        FROM pg_class c
-        JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE n.nspname = %s AND c.relname = %s
-        """,
-        (schema, table),
-    )
-    row = cur.fetchone()
-    return int(row[0]) if row and row[0] is not None else None
-
-
 def count_columns(cur, schema, table):
     cur.execute(
         """
-        SELECT COUNT(*) 
+        SELECT COUNT(*)
         FROM information_schema.columns
         WHERE table_schema = %s AND table_name = %s
         """,
@@ -67,12 +61,61 @@ def count_columns(cur, schema, table):
     return cur.fetchone()[0]
 
 
-def pg_has_tabledef(cur):
-    # Postgres 16+: pg_get_tabledef(regclass)
+def get_first_n_columns(cur, schema, table, n=COLUMN_LIMIT):
+    """
+    Returns the first N column names in ordinal order.
+    """
     cur.execute(
         """
-        SELECT COUNT(*) 
-        FROM pg_proc 
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s
+        ORDER BY ordinal_position
+        LIMIT %s
+        """,
+        (schema, table, n),
+    )
+    return [r[0] for r in cur.fetchall()]
+
+
+def estimate_row_count_pg18(cur, schema, table):
+    """
+    Prefer pg_stat_all_tables.n_live_tup on Postgres 18 for a fresher estimate.
+    Fallback to pg_class.reltuples if stats aren’t available.
+    """
+    cur.execute(
+        """
+        SELECT s.n_live_tup
+        FROM pg_stat_all_tables s
+        JOIN pg_class c ON c.oid = s.relid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = %s AND c.relname = %s
+        """,
+        (schema, table),
+    )
+    r = cur.fetchone()
+    if r and r[0] is not None:
+        return int(r[0])
+
+    # Fallback to reltuples (coarser estimate if not ANALYZEd recently)
+    cur.execute(
+        """
+        SELECT reltuples::bigint
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = %s AND c.relname = %s
+        """,
+        (schema, table),
+    )
+    r = cur.fetchone()
+    return int(r[0]) if r and r[0] is not None else None
+
+
+def pg_has_tabledef(cur):
+    cur.execute(
+        """
+        SELECT COUNT(*)
+        FROM pg_proc
         WHERE proname = 'pg_get_tabledef'
           AND pg_catalog.pg_function_is_visible(oid)
         """
@@ -81,7 +124,6 @@ def pg_has_tabledef(cur):
 
 
 def get_native_tabledef(cur, schema, table):
-    # When available, returns full DDL (no column cap)
     cur.execute("SELECT pg_get_tabledef(%s::regclass)", (f"{schema}.{table}",))
     r = cur.fetchone()
     return r[0] if r and r[0] else None
@@ -148,7 +190,6 @@ def render_type(row):
         "time without time zone", "time with time zone"
     ):
         return f"{data_type}({dt_prec})" if dt_prec is not None else data_type
-
     if data_type == "ARRAY" and udt_name:
         return udt_name
     if data_type == "USER-DEFINED" and udt_name:
@@ -185,7 +226,6 @@ def build_fallback_tabledef(cur, schema, table, column_limit=COLUMN_LIMIT):
 
     if truncated:
         ddl.append(f"\n-- NOTE: Column list truncated to first {column_limit} columns.")
-
     return "\n".join(ddl)
 
 
@@ -198,11 +238,30 @@ def write_header(f, schema, total_tables, limited_tables):
     if limited_tables < total_tables:
         f.write(f"- Processed first {limited_tables} tables (limit={TABLE_LIMIT})\n")
     f.write(f"- Columns per table shown: up to {COLUMN_LIMIT}\n")
+    f.write(f"- Sample rows per table: {SAMPLE_ROWS} (random)\n")
     f.write("\n---\n\n")
+
+
+def pandas_sample_markdown_sqlalchemy(engine, schema, table, colnames, n=SAMPLE_ROWS):
+    # Build a safe, quoted column list (identifiers cannot be bound as params)
+    quoted_cols = ", ".join([f'"{c}"' for c in colnames])
+    query = text(f'SELECT {quoted_cols} FROM "{schema}"."{table}" ORDER BY random() LIMIT :n;')
+    df = pd.read_sql_query(query, engine, params={"n": n})
+    df = df[colnames]  # ensure only the first N columns
+    try:
+        return df.to_markdown(index=False)
+    except Exception as e:
+        print("Fallback, error generating markdown:", e)
+        headers = "| " + " | ".join(colnames) + " |"
+        sep = "| " + " | ".join(["---"] * len(colnames)) + " |"
+        rows = ["| " + " | ".join("" if pd.isna(v) else str(v) for v in r.tolist()) + " |"
+                for _, r in df.iterrows()]
+        return "\n".join([headers, sep] + rows)
 
 
 def main():
     try:
+        engine = get_engine() 
         with connect() as conn, conn.cursor() as cur, OUTPUT_PATH.open("w", encoding="utf-8") as out:
             all_tables = fetch_tables(cur, SCHEMA)
             tables = all_tables[:TABLE_LIMIT]
@@ -211,16 +270,17 @@ def main():
             has_native = pg_has_tabledef(cur)
 
             for idx, table in enumerate(tables, 1):
-                est = estimate_row_count(cur, SCHEMA, table)
+                est = estimate_row_count_pg18(cur, SCHEMA, table)
                 col_count = count_columns(cur, SCHEMA, table)
+                first_cols = get_first_n_columns(cur, SCHEMA, table, COLUMN_LIMIT)
 
                 out.write(f"## {idx}. {SCHEMA}.{table}\n\n")
                 out.write(f"- Estimated rows: {est if est is not None else 'unknown'}\n")
-                out.write(f"- Columns: {col_count}\n\n")
+                out.write(f"- Columns: {col_count} (showing first {len(first_cols)})\n\n")
 
+                # DDL (cap columns if native DDL not available or exceeds cap)
                 out.write("```sql\n")
                 ddl = None
-                # Use native DDL only if present AND column count fits our cap; otherwise fallback
                 if has_native and col_count <= COLUMN_LIMIT:
                     try:
                         ddl = get_native_tabledef(cur, SCHEMA, table)
@@ -230,6 +290,10 @@ def main():
                     ddl = build_fallback_tabledef(cur, SCHEMA, table, COLUMN_LIMIT)
                 out.write(ddl.strip() + "\n")
                 out.write("```\n\n")
+
+                out.write(f"**Sample ({SAMPLE_ROWS} rows, first {len(first_cols)} columns):**\n\n")
+                md_table = pandas_sample_markdown_sqlalchemy(engine, SCHEMA, table, first_cols, SAMPLE_ROWS)
+                out.write(md_table + "\n\n---\n\n")
 
         print(f"Wrote: {OUTPUT_PATH.resolve()}")
     except Exception as e:
