@@ -8,4 +8,6 @@
 
 data/
 
-eleicoes22_introspection.md
+__pycache__/
+
+eleicoes22_*.md
