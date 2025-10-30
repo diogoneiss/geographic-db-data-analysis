@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
-
+import re
 import pandas as pd
 import numpy as np
 from sqlalchemy import text
@@ -28,11 +28,20 @@ try:
 except Exception:
     HAVE_ASCII_GRAPH = False
 
+# ---------- Python md-toc ----------
+try:
+    from md_toc.api import build_toc
+    HAVE_MD_TOC = True
+except Exception:
+    HAVE_MD_TOC = False
+
+
 # ---------- Output path ----------
 OUTPUT_STATS = Path("eleicoes22_stats.md")
 
 # ---------- Typing sets (aligned with your main script) ----------
 NUMERIC_UDT  = {"int2","int4","int8","float4","float8","numeric","money"}
+INT_UDT      = {"int2","int4","int8"}  # subset for categorical-numeric heuristic
 DATE_UDT     = {"date","timestamp","timestamptz","time","timetz"}
 BOOL_UDT     = {"bool"}
 TEXTLIKE_UDT = {"text","varchar","bpchar","uuid"}
@@ -44,13 +53,17 @@ IGNORE_TABLES = {
 
 # ---------- Fast iteration toggle ----------
 FAST_MODE  = True   # set True to stop early
-FAST_LIMIT = 9       # number of tables to process when FAST_MODE is True
+FAST_LIMIT = 9      # number of tables to process when FAST_MODE is True
 
 # ---------- Feature toggles ----------
-SHOW_SQL    = False   # if False, hide SQL blocks that reveal specific data
-SHOW_HIST   = True   # if False, skip histogram section entirely
-MAX_HIST_COLS = 10   # show histograms for at most this many numeric columns per table
-HIST_BINS     = 10   # number of bins for width_bucket histograms
+SHOW_SQL      = False  # if False, hide SQL blocks that reveal specific data
+SHOW_HIST     = True   # if False, skip histogram section entirely
+MAX_HIST_COLS = 10     # show histograms for at most this many numeric columns per table
+HIST_BINS     = 10     # number of bins for width_bucket histograms
+
+# Treat ints with low cardinality as categorical
+NUMERIC_CAT_MAX_DISTINCT = 20      # absolute threshold
+NUMERIC_CAT_MAX_RATIO    = 0.01    # distinct / non_null <= 1%
 
 # ---------- Helpers ----------
 def is_id_col(name: str) -> bool:
@@ -116,8 +129,7 @@ def categorical_topk_sql(schema: str, table: str, col: str, k: int = 5) -> str:
 
 def numeric_histogram_sql(schema: str, table: str, col: str, bins: int = HIST_BINS) -> str:
     """
-    Server-side histogram using width_bucket. Handles degenerate min==max.
-    Returns bucket index (1..bins), count, and min/max to reconstruct edges.
+    Server-side histogram using width_bucket. Handles min==max.
     """
     fqn = f'"{schema}"."{table}"'
     return f"""
@@ -142,6 +154,19 @@ def numeric_histogram_sql(schema: str, table: str, col: str, bins: int = HIST_BI
     FROM hist
     ORDER BY b;
     """
+
+def numeric_topk_values_sql(schema: str, table: str, col: str, k: int = 10) -> str:
+    """
+    Value frequency list for numeric-as-categorical hist (no buckets).
+    """
+    fqn = f'"{schema}"."{table}"'
+    return (
+        f'SELECT "{col}" AS value, COUNT(*)::bigint AS cnt '
+        f'FROM {fqn} '
+        f'GROUP BY 1 '
+        f'ORDER BY cnt DESC NULLS LAST, value ASC '
+        f'LIMIT {int(k)};'
+    )
 
 def markdown_table(headers: List[str], rows: List[List[Any]]) -> str:
     head = "| " + " | ".join(headers) + " |\n"
@@ -172,12 +197,45 @@ def write_stats_header(out, schema: str, total_tables: int, ignored: List[str]):
     out.write(f"- Outliers = Tukey fences (Q1−1.5·IQR, Q3+1.5·IQR)\n")
     out.write(f"- Fast mode: {FAST_MODE} (limit={FAST_LIMIT})\n")
     out.write(f"- SHOW_SQL: {SHOW_SQL}\n")
-    out.write(f"- SHOW_HIST: {SHOW_HIST} (bins={HIST_BINS}, max columns={MAX_HIST_COLS})\n\n")
-    # Table of contents placeholder for md-toc
+    out.write(f"- SHOW_HIST: {SHOW_HIST} (bins={HIST_BINS}, max columns={MAX_HIST_COLS})\n")
+    out.write(f"- Numeric low-cardinality heuristic: distinct ≤ {NUMERIC_CAT_MAX_DISTINCT} "
+              f"or distinct/non_null ≤ {NUMERIC_CAT_MAX_RATIO:.2%}\n\n")
+    # md-toc markers
     out.write("## Table of Contents\n\n")
     out.write("<!-- toc -->\n")
     out.write("<!-- tocstop -->\n\n")
     out.write("---\n\n")
+
+def inject_toc(md_path: Path):
+    """
+    Build TOC with md_toc.api.build_toc and replace the <!-- toc -->...<!-- tocstop --> block.
+    """
+    raw = md_path.read_text(encoding="utf-8")
+    if "<!-- toc -->" not in raw or "<!-- tocstop -->" not in raw:
+        # no markers; do nothing
+        return
+
+    # Build the TOC. Tweak options if you want ordered lists or deeper levels.
+    toc = build_toc(
+        str(md_path),
+        ordered=False,             # set True for numbered list
+        no_links=False,
+        no_indentation=False,
+        no_list_coherence=False,   # set True if your headings may skip levels
+        keep_header_levels=6,      # include up to ###### in the TOC
+        parser="github",
+        list_marker="-",
+        skip_lines=0,
+        constant_ordered_list=False,
+        newline_string="\n",
+    )
+
+    # Inject between markers
+    pattern = r"(<!-- toc -->)(.*?)(<!-- tocstop -->)"
+    repl = r"\1\n" + toc.strip() + r"\n\3"
+    updated = re.sub(pattern, repl, raw, flags=re.DOTALL)
+    md_path.write_text(updated, encoding="utf-8")
+
 
 # ---------- Main CLI ----------
 def main():
@@ -188,9 +246,7 @@ def main():
             all_tables = [t for t in database_tables if t not in IGNORE_TABLES and not t.startswith(IGNORE_PREFIX)]
             tables = all_tables[:TABLE_LIMIT]
 
-            # Treat as "ignored" everything not processed (explicit ignore + post-cap)
             ignored_tables = sorted(set(database_tables) - set(tables))
-
             write_stats_header(out, SCHEMA, len(all_tables), ignored_tables)
 
             processed = 0
@@ -228,7 +284,7 @@ def main():
                         outliers_time_total = 0.0
 
                         outlier_headers = ["column", "low", "high", "outliers", "time (s)"]
-                        for col, _ in num_cols:
+                        for col, udt in num_cols:
                             non_null = int(agg_row.get(f"{col}__non_null") or 0)
                             nulls    = int(agg_row.get(f"{col}__nulls") or 0)
                             total    = non_null + nulls
@@ -315,7 +371,6 @@ def main():
                             dt = time.perf_counter() - t0
                             categorical_time += dt
 
-                            # If every non-null value is unique, max count will be 1
                             if not df_top.empty and int(df_top["cnt"].max()) == 1:
                                 out.write(f"**Top-5 values for `{col}`** — _All non-null values are distinct; omitting list._\n\n")
                             else:
@@ -352,48 +407,86 @@ def main():
                             out.write("### Histograms (ASCII)\n\n")
                             graph = Pyasciigraph()
 
-                            for col in chosen_cols:
-                                qh = numeric_histogram_sql(SCHEMA, table, col, bins=HIST_BINS)
-                                t0 = time.perf_counter()
-                                df_h = pd.read_sql_query(text(qh), engine)
-                                dt = time.perf_counter() - t0
-                                hist_time_total += dt
+                            total_rows = int(agg_row.get("__n__") or 0)
 
-                                if df_h.empty or df_h["minv"].isna().all() or df_h["maxv"].isna().all():
-                                    out.write(f"**{col}**: _no data to plot_\n\n")
-                                    continue
+                            for col, udt in [nc for nc in num_cols if nc[0] in chosen_cols]:
+                                # Decide: categorical-like (bool or low-cardinality int) OR bucketed numeric
+                                non_null = int(agg_row.get(f"{col}__non_null") or 0)
+                                distinct = int(agg_row.get(f"{col}__distinct") or 0)
+                                treat_as_cat = (
+                                    udt in BOOL_UDT or
+                                    (udt in INT_UDT and non_null > 0 and (
+                                        distinct <= NUMERIC_CAT_MAX_DISTINCT or
+                                        (distinct / max(1, non_null)) <= NUMERIC_CAT_MAX_RATIO
+                                    ))
+                                )
 
-                                minv = float(df_h["minv"].iloc[0])
-                                maxv = float(df_h["maxv"].iloc[0])
-                                if not np.isfinite(minv) or not np.isfinite(maxv):
-                                    out.write(f"**{col}**: _unsupported range_\n\n")
-                                    continue
+                                if treat_as_cat:
+                                    # Category counts (top 10), no buckets
+                                    qv = numeric_topk_values_sql(SCHEMA, table, col, k=10)
+                                    t0 = time.perf_counter()
+                                    df_v = pd.read_sql_query(text(qv), engine)
+                                    dt = time.perf_counter() - t0
+                                    hist_time_total += dt
 
-                                # build (label, count) pairs
-                                data = []
-                                bins_present = df_h["b"].tolist()
-                                counts = df_h["cnt"].tolist()
-                                # reconstruct bin edges
-                                if maxv == minv:
-                                    edges = [(minv, maxv)]
+                                    if df_v.empty:
+                                        out.write(f"**{col}**: _no values_\n\n")
+                                        continue
+
+                                    data = []
+                                    for _, r in df_v.iterrows():
+                                        label = _trim_cell(r["value"])
+                                        cnt = int(r["cnt"])
+                                        data.append((label, cnt))
+
+                                    out.write(f"**{col}** (categorical-like, top-10) — time {dt:.6f}s\n\n")
+                                    lines = graph.graph('', data)
+                                    out.write("```\n" + "\n".join(lines) + "\n```\n\n")
+                                    if SHOW_SQL:
+                                        out.write("**SQL (value counts, top-10)**\n\n```sql\n" + qv.strip() + f"\n-- time: {dt:.6f}s\n```\n\n")
                                 else:
-                                    width = (maxv - minv) / HIST_BINS
-                                    edges = [(minv + (i-1)*width, minv + i*width) for i in range(1, HIST_BINS+1)]
-                                # map present buckets to edges
-                                for b, cnt in zip(bins_present, counts):
-                                    idx = int(b) - 1
-                                    if 0 <= idx < len(edges):
-                                        lo, hi = edges[idx]
-                                        label = f"[{np.format_float_positional(lo, trim='-')},{np.format_float_positional(hi, trim='-')})"
-                                        data.append((label, int(cnt)))
+                                    # Bucketed numeric histogram
+                                    qh = numeric_histogram_sql(SCHEMA, table, col, bins=HIST_BINS)
+                                    t0 = time.perf_counter()
+                                    df_h = pd.read_sql_query(text(qh), engine)
+                                    dt = time.perf_counter() - t0
+                                    hist_time_total += dt
 
-                                if not data:
-                                    out.write(f"**{col}**: _no bins_\n\n")
-                                    continue
+                                    if df_h.empty or df_h["minv"].isna().all() or df_h["maxv"].isna().all():
+                                        out.write(f"**{col}**: _no data to plot_\n\n")
+                                        continue
 
-                                out.write(f"**{col}** (time {dt:.6f}s)\n\n")
-                                lines = graph.graph('', data)
-                                out.write("```\n" + "\n".join(lines) + "\n```\n\n")
+                                    minv = float(df_h["minv"].iloc[0])
+                                    maxv = float(df_h["maxv"].iloc[0])
+                                    if not np.isfinite(minv) or not np.isfinite(maxv):
+                                        out.write(f"**{col}**: _unsupported range_\n\n")
+                                        continue
+
+                                    data = []
+                                    bins_present = df_h["b"].tolist()
+                                    counts = df_h["cnt"].tolist()
+                                    # reconstruct edges
+                                    if maxv == minv:
+                                        edges = [(minv, maxv)]
+                                    else:
+                                        width = (maxv - minv) / HIST_BINS
+                                        edges = [(minv + (i-1)*width, minv + i*width) for i in range(1, HIST_BINS+1)]
+                                    for b, cnt in zip(bins_present, counts):
+                                        idx = int(b) - 1
+                                        if 0 <= idx < len(edges):
+                                            lo, hi = edges[idx]
+                                            label = f"[{np.format_float_positional(lo, trim='-')},{np.format_float_positional(hi, trim='-')})"
+                                            data.append((label, int(cnt)))
+
+                                    if not data:
+                                        out.write(f"**{col}**: _no bins_\n\n")
+                                        continue
+
+                                    out.write(f"**{col}** (bucketed, {HIST_BINS} bins) — time {dt:.6f}s\n\n")
+                                    lines = graph.graph('', data)
+                                    out.write("```\n" + "\n".join(lines) + "\n```\n\n")
+                                    if SHOW_SQL:
+                                        out.write("**SQL (histogram)**\n\n```sql\n" + qh.strip() + f"\n-- time: {dt:.6f}s\n```\n\n")
 
                     total_time = time.perf_counter() - table_start
 
@@ -416,6 +509,13 @@ def main():
                     import traceback as _tb
                     out.write("```\n" + "".join(_tb.format_exc()) + "```\n\n---\n\n")
                     continue
+
+        # Build TOC in-place with Python md-toc
+        if HAVE_MD_TOC:
+            inject_toc(OUTPUT_STATS)
+        else:
+            print("md-toc not installed; run `pip install md-toc` to populate the TOC block.", file=sys.stderr)
+
 
         print(f"Wrote: {OUTPUT_STATS.resolve()}")
     except Exception as e:
