@@ -51,6 +51,10 @@ IGNORE_TABLES = {
     # "example_to_skip",
 }
 
+# Histogram mode: 'fixed_width' (current) or 'equal_freq' (≈ equal items per bin)
+HIST_MODE = 'equal_freq'   # or 'equal_freq'
+
+
 # ---------- Fast iteration toggle ----------
 FAST_MODE  = True   # set True to stop early
 FAST_LIMIT = 9      # number of tables to process when FAST_MODE is True
@@ -255,6 +259,7 @@ def main():
                     break
                 table_start = time.perf_counter()
                 try:
+                    out.write(f"## {idx}. {table}\n\n")
                     out.write(f"## {idx}. {SCHEMA}.{table}\n\n")
 
                     # Column splits
@@ -405,7 +410,7 @@ def main():
                             chosen_cols = [c for _, c in ranked[:MAX_HIST_COLS]]
 
                             out.write("### Histograms (ASCII)\n\n")
-                            graph = Pyasciigraph()
+                            graph = Pyasciigraph(titlebar='', separator_length=4, human_readable='si', float_format='{:,.2f}')
 
                             total_rows = int(agg_row.get("__n__") or 0)
 
@@ -491,7 +496,7 @@ def main():
                     total_time = time.perf_counter() - table_start
 
                     # Timings block
-                    out.write("### Timings\n\n")
+                    out.write("`Execution timings`\n\n")
                     trows = [
                         ["split_columns", round(split_time, 6)],
                         ["numeric_aggregates", round(numeric_time, 6)],
