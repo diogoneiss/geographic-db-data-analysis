@@ -100,18 +100,30 @@ def count_columns(cur, schema, relname):
 
 
 def get_first_n_columns_with_types(cur, schema, relname, n=COLUMN_LIMIT):
+    """
+    Works for tables, views, and materialized views.
+    Returns [(column_name, udt_name)] limited to first N visible columns.
+    """
     cur.execute(
         """
-        SELECT column_name, udt_name
-        FROM information_schema.columns
-        WHERE table_schema = %s AND table_name = %s
-        ORDER BY ordinal_position
+        SELECT a.attname AS column_name,
+               t.typname AS udt_name
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        JOIN pg_attribute a ON a.attrelid = c.oid
+        JOIN pg_type t ON t.oid = a.atttypid
+        WHERE n.nspname = %s
+          AND c.relname = %s
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+        ORDER BY a.attnum
         LIMIT %s
         """,
         (schema, relname, n),
     )
     rows = cur.fetchall() or []
     return [(r[0], r[1]) for r in rows]
+
 
 
 def estimate_row_count_pg18(cur, schema, relname):
@@ -490,10 +502,16 @@ def main():
                             out.write("-- materialized view definition not available\n")
                         out.write("```\n\n")
 
-                        # Samples
                         out.write(f"**Sample ({SAMPLE_ROWS} rows, first {len(first_cols)} columns):**\n\n")
-                        md_table = pandas_sample_markdown_sqlalchemy(engine, SCHEMA, mv, cols_with_types, SAMPLE_ROWS)
-                        out.write(md_table + "\n\n")
+                        if not first_cols:
+                            out.write("_No visible columns; skipping sample._\n\n")
+                        else:
+                            md_table = pandas_sample_markdown_sqlalchemy(engine, SCHEMA, mv, cols_with_types, SAMPLE_ROWS)
+                            if md_table.strip() == "" or md_table.count("\n") <= 2:
+                                # Probably WITH NO DATA or truly empty result
+                                out.write("_No rows (materialized view may need REFRESH MATERIALIZED VIEW)._ \n\n")
+                            else:
+                                out.write(md_table + "\n\n")
                     except Exception as ex:
                         out.write(f"⚠️ **Error processing {SCHEMA}.{mv}:** {ex}\n\n")
                         out.write("```\n" + "".join(traceback.format_exc()) + "```\n\n")
