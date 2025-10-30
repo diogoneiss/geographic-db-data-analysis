@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import argparse
 from pathlib import Path
 from typing import List, Tuple
 import xml.etree.ElementTree as ET
@@ -14,35 +15,34 @@ from getTables import (
     fetch_tables, fetch_columns_for_fallback, fetch_primary_key_cols
 )
 
-# ---------------- Config ----------------
+# ---------------- Defaults & Config ----------------
 OUTPUT_XML = Path("omtg_generated.xml")
 
-# Explicit “by name” ignore list (in addition to IGNORE_PREFIX)
-IGNORE_TABLES = {
-    # "some_table_to_skip",
-}
+# Explicit “by name” ignore list (in addition to IGNORE_PREFIX).
+# You can still pass more via CLI: --ignore t1,t2,t3
+IGNORE_TABLES_DEFAULT = set()
 
-# Hard cap for attributes in OMT-G (first N columns only)
-# We use the stricter between this cap and your COLUMN_LIMIT
+# Hard cap for attributes in OMT-G (first N columns only).
+# We use the stricter between this cap and your COLUMN_LIMIT.
 ATTR_COL_CAP = 20
 
-# Some importers only accept a single-line XML. Toggle this on if needed.
+# Optional: some importers only accept a single-line XML (off by default).
 COMPACT_SINGLE_LINE = True
 
-# Rough auto layout when you don’t care about exact positions
-GRID_CELL_W = 260
-GRID_CELL_H = 160
-GRID_COLS   = 4
-GRID_START_X = 200
-GRID_START_Y = 160
-# ----------------------------------------
+# Rough auto layout — **spaced out** by default
+GRID_CELL_W = 380
+GRID_CELL_H = 220
+GRID_COLS   = 3
+GRID_START_X = 120
+GRID_START_Y = 120
+# ---------------------------------------------------
 
 
-def autolayout(idx: int) -> tuple[int, int]:
-    r = idx // GRID_COLS
-    c = idx % GRID_COLS
-    top  = GRID_START_Y + r * GRID_CELL_H
-    left = GRID_START_X + c * GRID_CELL_W
+def autolayout(idx: int, cols: int, cell_w: int, cell_h: int, start_x: int, start_y: int) -> tuple[int, int]:
+    r = idx // cols
+    c = idx % cols
+    top  = start_y + r * cell_h
+    left = start_x + c * cell_w
     return top, left
 
 
@@ -59,25 +59,73 @@ def detect_has_geometry(col_rows: List[Tuple]) -> bool:
     return False
 
 
-def map_col_to_omtg_type(data_type: str, udt_name: str) -> str:
+def map_col_to_omtg_type(row: Tuple) -> str:
     """
-    Minimal attribute typing for the XML body (the example uses TEXT/INTEGER).
+    Map to the constrained set:
+      BOOLEAN, DATE, INTEGER, REAL, TEXT, TIME, VARCHAR
+    Logic:
+      - bool -> BOOLEAN
+      - date -> DATE
+      - time/timetz -> TIME
+      - integer types -> INTEGER
+      - real/double -> REAL
+      - numeric/decimal -> REAL if scale>0 else INTEGER
+      - varchar -> VARCHAR
+      - text/bpchar -> TEXT
+      - fallback -> TEXT
     """
-    dt = (data_type or "").lower()
-    udt = (udt_name or "").lower()
+    # row: (ord, name, data_type, udt_name, char_len, num_prec, num_scale, dt_prec, is_nullable, default)
+    data_type = (row[2] or "").lower()
+    udt_name  = (row[3] or "").lower()
+    num_scale = row[6]
 
-    if udt in GEOM_UDT_NAMES:
-        return "GEOMETRY"
-    if dt in ("smallint", "integer", "bigint"):
-        return "INTEGER"
-    if dt in ("numeric", "decimal", "real", "double precision", "money"):
-        return "NUMERIC"
-    if dt in ("boolean",):
+    # booleans
+    if data_type in ("boolean",) or udt_name in ("bool",):
         return "BOOLEAN"
+
+    # date / time
+    if data_type in ("date",):
+        return "DATE"
+    if data_type in ("time without time zone", "time with time zone") or udt_name in ("time", "timetz"):
+        return "TIME"
+
+    # integers
+    if data_type in ("smallint", "integer", "bigint") or udt_name in ("int2", "int4", "int8"):
+        return "INTEGER"
+
+    # floating-point
+    if data_type in ("real", "double precision") or udt_name in ("float4", "float8"):
+        return "REAL"
+
+    # numeric/decimal -> use scale to decide integer vs real
+    if data_type in ("numeric", "decimal") or udt_name in ("numeric", "decimal"):
+        try:
+            if num_scale is not None and int(num_scale) > 0:
+                return "REAL"
+            return "INTEGER"
+        except Exception:
+            return "REAL"
+
+    # character types
+    if data_type in ("character varying",) or udt_name in ("varchar",):
+        return "VARCHAR"
+    if data_type in ("character", "text") or udt_name in ("bpchar", "text"):
+        return "TEXT"
+
+    # everything else -> TEXT
     return "TEXT"
 
 
-def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
+def build_omtg_xml(
+    cur,
+    schema: str,
+    tables: List[str],
+    grid_cols: int,
+    grid_w: int,
+    grid_h: int,
+    start_x: int,
+    start_y: int,
+) -> ET.ElementTree:
     """
     Build the OMT-G XML document like your example, based on DB catalog only.
     Applies per-table column cap = min(ATTR_COL_CAP, COLUMN_LIMIT).
@@ -88,11 +136,12 @@ def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
     root.set("xsi:noNamespaceSchemaLocation", "omtg-schema-template.xsd")
 
     classes_el = ET.SubElement(root, "classes")
-    relationships_el = ET.SubElement(root, "relationships")  # left empty on purpose
+    ET.SubElement(root, "relationships")  # empty for now
 
     grid_idx = 0
     per_table_cap = min(ATTR_COL_CAP, max(1, COLUMN_LIMIT))
     print(f"[build] Attribute column cap: first {per_table_cap} columns per table (min of ATTR_COL_CAP={ATTR_COL_CAP} and COLUMN_LIMIT={COLUMN_LIMIT})")
+    print(f"[layout] cols={grid_cols}, cell=({grid_w}x{grid_h}), origin=({start_x},{start_y})")
 
     for tbl in tqdm(tables, desc="Emit classes", unit="cls"):
         print(f"  [table] {schema}.{tbl}: fetching columns…")
@@ -113,7 +162,7 @@ def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
         pk_set = set(pk_cols)
         print(f"    -> primary keys detected: {list(pk_set) if pk_set else 'none'}")
 
-        top, left = autolayout(grid_idx)
+        top, left = autolayout(grid_idx, grid_cols, grid_w, grid_h, start_x, start_y)
         grid_idx += 1
         print(f"    -> placement: top={top}, left={left}")
 
@@ -127,30 +176,57 @@ def build_omtg_xml(cur, schema: str, tables: List[str]) -> ET.ElementTree:
         attrs_el = ET.SubElement(class_el, "attributes")
 
         # attributes from DB columns (capped)
+        last_colname = ''
         for row in col_rows:
             # row = (ord, name, data_type, udt_name, char_len, num_prec, num_scale, dt_prec, is_nullable, default)
-            colname   = row[1]
-            data_type = row[2]
-            udt_name  = row[3]
+            colname = row[1]
+
+            if last_colname == 'id_concentracao_urbana':
+                print("\n\n\n\nEncontrei a concentração urbana!!!!\n\n\n")
+                print(f"Coluna atual: {colname}, row completo = {row}")
+
+            last_colname = colname
 
             attr_el = ET.SubElement(attrs_el, "attribute")
             ET.SubElement(attr_el, "name").text = colname
-            ET.SubElement(attr_el, "type").text = map_col_to_omtg_type(data_type, udt_name)
+            ET.SubElement(attr_el, "type").text = map_col_to_omtg_type(row)
             if colname in pk_set:
                 ET.SubElement(attr_el, "key").text = "true"
 
-        if total_cols > per_table_cap:
-            # leave a hint in the XML as a comment for future manual tweaks
-            attrs_el.append(ET.Comment(f" NOTE: attributes truncated to first {per_table_cap} of {total_cols} "))
+        #if total_cols > per_table_cap:
+        #    attrs_el.append(ET.Comment(f" NOTE: attributes truncated to first {per_table_cap} of {total_cols} "))
 
         print(f"    -> attributes emitted: {len(col_rows)} (of {total_cols})")
-        # done one class
 
     print("[build] XML tree completed")
     return ET.ElementTree(root)
 
 
+def parse_ignore_list(arg_val: str) -> set:
+    """
+    Parse --ignore 'a,b,c' into a set; handles empty string.
+    """
+    if not arg_val:
+        return set()
+    return {x.strip() for x in arg_val.split(",") if x.strip()}
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Generate OMT-G XML from DB catalog (tables only).")
+    parser.add_argument("--ignore", type=str, default="", help="Comma-separated list of table names to ignore (in addition to IGNORE_PREFIX)")
+    parser.add_argument("--out", type=str, default=str(OUTPUT_XML), help="Output XML path")
+    parser.add_argument("--cols", type=int, default=GRID_COLS, help="Grid columns")
+    parser.add_argument("--cellw", type=int, default=GRID_CELL_W, help="Grid cell width")
+    parser.add_argument("--cellh", type=int, default=GRID_CELL_H, help="Grid cell height")
+    parser.add_argument("--startx", type=int, default=GRID_START_X, help="Grid origin X")
+    parser.add_argument("--starty", type=int, default=GRID_START_Y, help="Grid origin Y")
+    parser.add_argument("--singleline", action="store_true", help="Collapse XML into a single line after write")
+    args = parser.parse_args()
+
+    out_path = Path(args.out)
+    ignore_cli = parse_ignore_list(args.ignore)
+    ignore_all = set(IGNORE_TABLES_DEFAULT) | ignore_cli
+
     try:
         print("[init] Connecting to database…")
         _ = get_engine()  # keep parity with your helpers (not strictly required here)
@@ -165,8 +241,8 @@ def main():
                 if t.startswith(IGNORE_PREFIX):
                     print(f"  [skip] {t} (prefix {IGNORE_PREFIX})")
                     continue
-                if t in IGNORE_TABLES:
-                    print(f"  [skip] {t} (listed in IGNORE_TABLES)")
+                if t in ignore_all:
+                    print(f"  [skip] {t} (in ignore list)")
                     continue
                 filtered.append(t)
 
@@ -179,20 +255,27 @@ def main():
                 print(f"[limit] No TABLE_LIMIT cap: selected all {len(selected)} tables")
 
             print(f"[init] Will materialize {len(selected)} tables -> XML")
-            tree = build_omtg_xml(cur, SCHEMA, selected)
+            tree = build_omtg_xml(
+                cur,
+                SCHEMA,
+                selected,
+                grid_cols=args.cols,
+                grid_w=args.cellw,
+                grid_h=args.cellh,
+                start_x=args.startx,
+                start_y=args.starty,
+            )
 
-        # write XML
-        print(f"[write] Writing XML to: {OUTPUT_XML}")
-        # Don’t pretty print (some importers don’t like whitespace/indentation)
-        tree.write(OUTPUT_XML, encoding="UTF-8", xml_declaration=True)
+        # write XML (pretty whitespace off by default)
+        print(f"[write] Writing XML to: {out_path}")
+        tree.write(out_path, encoding="UTF-8", xml_declaration=True)
 
         # Optionally collapse to single line (some tools only accept a one-line file)
-        if COMPACT_SINGLE_LINE:
+        if args.singleline or COMPACT_SINGLE_LINE:
             print("[write] Collapsing XML to a single line for importer compatibility")
-            content = OUTPUT_XML.read_text(encoding="UTF-8")
-            # strip each line, then join without separators
+            content = out_path.read_text(encoding="UTF-8")
             single_line = "".join(line.strip() for line in content.splitlines())
-            OUTPUT_XML.write_text(single_line, encoding="UTF-8")
+            out_path.write_text(single_line, encoding="UTF-8")
 
         print("[done] XML generated successfully.")
     except Exception as e:
