@@ -11,7 +11,7 @@ from sqlalchemy import text
 from tqdm import tqdm
 
 # ---- Reuse helpers from your existing script in the same folder ----
-from getTables import (  # rename if your file has a different name/module
+from getTables import (  # rename if your file/module name differs
     DB_NAME, DB_HOST, DB_PORT, SCHEMA, TABLE_LIMIT, COLUMN_LIMIT,
     NULL_STR, GEOM_UDT_NAMES,
     IGNORE_PREFIX,
@@ -20,6 +20,13 @@ from getTables import (  # rename if your file has a different name/module
     get_first_n_columns_with_types,
     _trim_cell, _format_number
 )
+
+# ---------- Optional ASCII histograms ----------
+try:
+    from ascii_graph import Pyasciigraph
+    HAVE_ASCII_GRAPH = True
+except Exception:
+    HAVE_ASCII_GRAPH = False
 
 # ---------- Output path ----------
 OUTPUT_STATS = Path("eleicoes22_stats.md")
@@ -32,17 +39,20 @@ TEXTLIKE_UDT = {"text","varchar","bpchar","uuid"}
 
 # ---------- Ignore list (tables) ----------
 IGNORE_TABLES = {
-    #"votacao_secao_2022_sc",
-    #"br_ibge_censo_2022_populacao_idade_sexo",
+    # "example_to_skip",
 }
 
-
-
 # ---------- Fast iteration toggle ----------
-FAST_MODE  = False   # set True to stop early
-FAST_LIMIT = 5      # number of tables to process when FAST_MODE is True
+FAST_MODE  = True   # set True to stop early
+FAST_LIMIT = 9       # number of tables to process when FAST_MODE is True
 
-# ---------- Helpers reused/extended ----------
+# ---------- Feature toggles ----------
+SHOW_SQL    = False   # if False, hide SQL blocks that reveal specific data
+SHOW_HIST   = True   # if False, skip histogram section entirely
+MAX_HIST_COLS = 10   # show histograms for at most this many numeric columns per table
+HIST_BINS     = 10   # number of bins for width_bucket histograms
+
+# ---------- Helpers ----------
 def is_id_col(name: str) -> bool:
     n = name.lower()
     return n.startswith("id_") or n.endswith("_id")
@@ -104,6 +114,35 @@ def categorical_topk_sql(schema: str, table: str, col: str, k: int = 5) -> str:
         f'GROUP BY 1 ORDER BY cnt DESC NULLS LAST, value ASC LIMIT {int(k)};'
     )
 
+def numeric_histogram_sql(schema: str, table: str, col: str, bins: int = HIST_BINS) -> str:
+    """
+    Server-side histogram using width_bucket. Handles degenerate min==max.
+    Returns bucket index (1..bins), count, and min/max to reconstruct edges.
+    """
+    fqn = f'"{schema}"."{table}"'
+    return f"""
+    WITH stats AS (
+      SELECT MIN("{col}") AS minv, MAX("{col}") AS maxv, COUNT("{col}") AS nn
+      FROM {fqn}
+      WHERE "{col}" IS NOT NULL
+    ),
+    hist AS (
+      SELECT
+        CASE
+          WHEN s.maxv = s.minv OR s.nn = 0 THEN 1
+          ELSE width_bucket("{col}", s.minv, s.maxv, {bins})
+        END AS b,
+        COUNT(*)::bigint AS cnt
+      FROM {fqn} t
+      CROSS JOIN stats s
+      WHERE "{col}" IS NOT NULL
+      GROUP BY 1
+    )
+    SELECT b, cnt, (SELECT minv FROM stats) AS minv, (SELECT maxv FROM stats) AS maxv
+    FROM hist
+    ORDER BY b;
+    """
+
 def markdown_table(headers: List[str], rows: List[List[Any]]) -> str:
     head = "| " + " | ".join(headers) + " |\n"
     sep  = "| " + " | ".join(["---"] * len(headers)) + " |\n"
@@ -132,7 +171,13 @@ def write_stats_header(out, schema: str, total_tables: int, ignored: List[str]):
     out.write(f"- Columns per table considered: up to {COLUMN_LIMIT} (geometry/geography skipped; id_* and *_id skipped)\n")
     out.write(f"- Outliers = Tukey fences (Q1−1.5·IQR, Q3+1.5·IQR)\n")
     out.write(f"- Fast mode: {FAST_MODE} (limit={FAST_LIMIT})\n")
-    out.write("\n---\n\n")
+    out.write(f"- SHOW_SQL: {SHOW_SQL}\n")
+    out.write(f"- SHOW_HIST: {SHOW_HIST} (bins={HIST_BINS}, max columns={MAX_HIST_COLS})\n\n")
+    # Table of contents placeholder for md-toc
+    out.write("## Table of Contents\n\n")
+    out.write("<!-- toc -->\n")
+    out.write("<!-- tocstop -->\n\n")
+    out.write("---\n\n")
 
 # ---------- Main CLI ----------
 def main():
@@ -143,10 +188,10 @@ def main():
             all_tables = [t for t in database_tables if t not in IGNORE_TABLES and not t.startswith(IGNORE_PREFIX)]
             tables = all_tables[:TABLE_LIMIT]
 
-            #ignored tables are those left out from the full list and after the limit
-            ignored_tables = set(database_tables) - set(tables)
+            # Treat as "ignored" everything not processed (explicit ignore + post-cap)
+            ignored_tables = sorted(set(database_tables) - set(tables))
 
-            write_stats_header(out, SCHEMA, len(all_tables), list(ignored_tables))
+            write_stats_header(out, SCHEMA, len(all_tables), ignored_tables)
 
             processed = 0
             for idx, table in enumerate(tqdm(tables, desc="Stats", unit="tbl"), start=1):
@@ -168,6 +213,7 @@ def main():
                     numeric_time = 0.0
                     outlier_rows: List[List[Any]] = []
                     numeric_sql_rendered = ""
+                    agg_row: Dict[str, Any] = {}
                     if num_cols:
                         agg_sql = numeric_stats_sql(SCHEMA, table, num_cols)
                         numeric_sql_rendered = agg_sql
@@ -176,26 +222,26 @@ def main():
                         df_agg = pd.read_sql_query(text(agg_sql), engine)
                         numeric_time = time.perf_counter() - t0
 
-                        row = df_agg.iloc[0].to_dict()
+                        agg_row = df_agg.iloc[0].to_dict()
                         headers = ["column","non_null","nulls","nulls_%","distinct","mean","stddev","min","p25","median","p75","max"]
                         rows = []
                         outliers_time_total = 0.0
 
                         outlier_headers = ["column", "low", "high", "outliers", "time (s)"]
                         for col, _ in num_cols:
-                            non_null = int(row.get(f"{col}__non_null") or 0)
-                            nulls    = int(row.get(f"{col}__nulls") or 0)
+                            non_null = int(agg_row.get(f"{col}__non_null") or 0)
+                            nulls    = int(agg_row.get(f"{col}__nulls") or 0)
                             total    = non_null + nulls
                             nulls_pct = (nulls / total * 100.0) if total > 0 else 0.0
 
-                            distinct = row.get(f"{col}__distinct")
-                            mean     = row.get(f"{col}__mean")
-                            stddev   = row.get(f"{col}__stddev")
-                            vmin     = row.get(f"{col}__min")
-                            p25      = row.get(f"{col}__p25")
-                            med      = row.get(f"{col}__median")
-                            p75      = row.get(f"{col}__p75")
-                            vmax     = row.get(f"{col}__max")
+                            distinct = agg_row.get(f"{col}__distinct")
+                            mean     = agg_row.get(f"{col}__mean")
+                            stddev   = agg_row.get(f"{col}__stddev")
+                            vmin     = agg_row.get(f"{col}__min")
+                            p25      = agg_row.get(f"{col}__p25")
+                            med      = agg_row.get(f"{col}__median")
+                            p75      = agg_row.get(f"{col}__p75")
+                            vmax     = agg_row.get(f"{col}__max")
 
                             rows.append([col, non_null, nulls, round(nulls_pct, 4), distinct, mean, stddev, vmin, p25, med, p75, vmax])
 
@@ -222,14 +268,15 @@ def main():
                         out.write(markdown_table(outlier_headers, outlier_rows) + "\n")
 
                         # SQL used (aggregate)
-                        out.write("**SQL (numeric aggregate)**\n\n```sql\n")
-                        out.write(numeric_sql_rendered.strip() + "\n```\n\n")
+                        if SHOW_SQL:
+                            out.write("**SQL (numeric aggregate)**\n\n```sql\n")
+                            out.write(numeric_sql_rendered.strip() + "\n```\n\n")
 
-                        # Template for outlier SQL
-                        out.write("**SQL template (numeric outliers per column)**\n\n```sql\n")
-                        out.write('SELECT SUM(CASE WHEN "{col}" < {low} OR "{col}" > {high} THEN 1 ELSE 0 END)::bigint AS outliers\n'
-                                  f'FROM "{SCHEMA}"."{table}";\n')
-                        out.write("```\n\n")
+                            # Template for outlier SQL
+                            out.write("**SQL template (numeric outliers per column)**\n\n```sql\n")
+                            out.write('SELECT SUM(CASE WHEN "{col}" < {low} OR "{col}" > {high} THEN 1 ELSE 0 END)::bigint AS outliers\n'
+                                      f'FROM "{SCHEMA}"."{table}";\n')
+                            out.write("```\n\n")
                     else:
                         out.write("_No numeric columns considered._\n\n")
 
@@ -255,7 +302,8 @@ def main():
                             nulls_pct = (nulls / total * 100.0) if total > 0 else 0.0
 
                             cat_summary_rows.append([col, non_null, nulls, round(nulls_pct, 4), int(rsum["distinct"])])
-                            cat_sql_blocks.append(qsum.strip() + f"\n-- time: {dt:.6f}s")
+                            if SHOW_SQL:
+                                cat_sql_blocks.append(qsum.strip() + f"\n-- time: {dt:.6f}s")
 
                         out.write(markdown_table(head, cat_summary_rows) + "\n")
 
@@ -278,13 +326,74 @@ def main():
                                     df_top["value"] = df_top["value"].map(lambda x: _trim_cell(x))
                                     df_top["cnt"] = df_top["cnt"].map(lambda x: _format_number(x))
                                     out.write(df_top.to_markdown(index=False) + "\n\n")
-                                out.write("**SQL (top-k)**\n\n```sql\n" + qtop.strip() + f"\n-- time: {dt:.6f}s\n```\n\n")
+                                if SHOW_SQL:
+                                    out.write("**SQL (top-k)**\n\n```sql\n" + qtop.strip() + f"\n-- time: {dt:.6f}s\n```\n\n")
 
-                        # include the summary SQLs
-                        out.write("**SQL (categorical summaries)**\n\n```sql\n")
-                        out.write("\n\n".join(cat_sql_blocks) + "\n```\n\n")
+                        if SHOW_SQL and cat_sql_blocks:
+                            out.write("**SQL (categorical summaries)**\n\n```sql\n")
+                            out.write("\n\n".join(cat_sql_blocks) + "\n```\n\n")
                     else:
                         out.write("_No categorical columns considered._\n\n")
+
+                    # ---------- Histograms (ASCII) ----------
+                    hist_time_total = 0.0
+                    if SHOW_HIST and num_cols:
+                        if not HAVE_ASCII_GRAPH:
+                            out.write("_Histograms requested but `ascii-graph` not installed. Run `pip install ascii-graph`._\n\n")
+                        else:
+                            # choose up to MAX_HIST_COLS numeric columns (largest non-null counts)
+                            ranked = []
+                            for col, _ in num_cols:
+                                non_null = int(agg_row.get(f"{col}__non_null") or 0)
+                                ranked.append((non_null, col))
+                            ranked.sort(reverse=True)
+                            chosen_cols = [c for _, c in ranked[:MAX_HIST_COLS]]
+
+                            out.write("### Histograms (ASCII)\n\n")
+                            graph = Pyasciigraph()
+
+                            for col in chosen_cols:
+                                qh = numeric_histogram_sql(SCHEMA, table, col, bins=HIST_BINS)
+                                t0 = time.perf_counter()
+                                df_h = pd.read_sql_query(text(qh), engine)
+                                dt = time.perf_counter() - t0
+                                hist_time_total += dt
+
+                                if df_h.empty or df_h["minv"].isna().all() or df_h["maxv"].isna().all():
+                                    out.write(f"**{col}**: _no data to plot_\n\n")
+                                    continue
+
+                                minv = float(df_h["minv"].iloc[0])
+                                maxv = float(df_h["maxv"].iloc[0])
+                                if not np.isfinite(minv) or not np.isfinite(maxv):
+                                    out.write(f"**{col}**: _unsupported range_\n\n")
+                                    continue
+
+                                # build (label, count) pairs
+                                data = []
+                                bins_present = df_h["b"].tolist()
+                                counts = df_h["cnt"].tolist()
+                                # reconstruct bin edges
+                                if maxv == minv:
+                                    edges = [(minv, maxv)]
+                                else:
+                                    width = (maxv - minv) / HIST_BINS
+                                    edges = [(minv + (i-1)*width, minv + i*width) for i in range(1, HIST_BINS+1)]
+                                # map present buckets to edges
+                                for b, cnt in zip(bins_present, counts):
+                                    idx = int(b) - 1
+                                    if 0 <= idx < len(edges):
+                                        lo, hi = edges[idx]
+                                        label = f"[{np.format_float_positional(lo, trim='-')},{np.format_float_positional(hi, trim='-')})"
+                                        data.append((label, int(cnt)))
+
+                                if not data:
+                                    out.write(f"**{col}**: _no bins_\n\n")
+                                    continue
+
+                                out.write(f"**{col}** (time {dt:.6f}s)\n\n")
+                                lines = graph.graph('', data)
+                                out.write("```\n" + "\n".join(lines) + "\n```\n\n")
 
                     total_time = time.perf_counter() - table_start
 
@@ -294,6 +403,7 @@ def main():
                         ["split_columns", round(split_time, 6)],
                         ["numeric_aggregates", round(numeric_time, 6)],
                         ["categoricals_total", round(categorical_time, 6)],
+                        ["histograms_total", round(hist_time_total, 6)],
                         ["table_total", round(total_time, 6)],
                     ]
                     out.write(markdown_table(["step","time (s)"], trows) + "\n")
