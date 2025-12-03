@@ -47,11 +47,14 @@ TEXTLIKE_UDT = {"text","varchar","bpchar","uuid"}
 
 # ---------- Ignore list (tables) ----------
 IGNORE_TABLES = {
-    # "example_to_skip",
+    "votacao_partido_munzona_2022_sc",
+    "br_ibge_censo_2022_setor_censitario_sc",
+    "br_bd_diretorios_brasil_setor_censitario",
+    "br_geobr_mapas_limite_vizinhanca"
 }
 
 # ---------- Fast iteration toggle ----------
-FAST_MODE  = True
+FAST_MODE  = False
 FAST_LIMIT = 13
 
 # ---------- Feature toggles ----------
