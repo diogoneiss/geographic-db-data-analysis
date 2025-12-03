@@ -22,6 +22,9 @@ import libpysal
 from esda.moran import Moran
 from tqdm import tqdm
 
+
+USE_PARTY = True  # se True, calcula por partido em vez de por candidato
+
 # ---------------------------------------------------------------------------
 # Configuração básica
 # ---------------------------------------------------------------------------
@@ -81,8 +84,23 @@ def fetch_distinct_candidates(conn):
         rows = cur.fetchall()
     return [r[0] for r in rows]
 
+def fetch_distinct_parties(conn):
+    """
+    Retorna lista de (sigla_partido) distintos na view agregada.
+    Se quiser nm_votavel também, basta incluir na query.
+    """
+    sql = """
+        SELECT DISTINCT sigla_partido
+        FROM eleicoes22.agg_eleicao_partidos_e_outras_bases
+        WHERE sigla_partido IS NOT NULL
+        ORDER BY sigla_partido
+    """
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+    return [r[0] for r in rows]
 
-def candidate_already_processed(conn, sq_candidato):
+def item_already_processed(conn, sq_candidato):
     """
     Verifica se já existe linha na tabela de cálculo
     para esse sq_candidato (tipo=1 => candidato).
@@ -91,7 +109,6 @@ def candidate_already_processed(conn, sq_candidato):
         SELECT 1
         FROM eleicoes22.calc_moran_dep_e_partido
         WHERE sequencial_ou_sigla_partido = %s
-          AND tipo = 1
         LIMIT 1
     """
     with conn.cursor() as cur:
@@ -122,6 +139,25 @@ def load_candidate_geodata(engine, sq_candidato):
     )
     return gdf
 
+
+def load_party_geodata(engine, sigla_partido):
+    sql = """
+        SELECT
+            id_municipio,
+            qt_votos,
+            votos_por_pop,
+            geom
+        FROM eleicoes22.agg_eleicao_partidos_e_outras_bases
+        WHERE sigla_partido = %(sigla_partido)s
+          AND geom IS NOT NULL
+    """
+    gdf = gpd.read_postgis(
+        sql,
+        engine,
+        params={"sigla_partido": sigla_partido},
+        geom_col="geom",
+    )
+    return gdf
 
 # ---------------------------------------------------------------------------
 # Cálculo do Moran para um candidato
@@ -187,7 +223,7 @@ def compute_moran_for_candidate(gdf, sq_candidato=None):
 # Inserção na tabela de resultados
 # ---------------------------------------------------------------------------
 
-def insert_candidate_moran(conn, sq_candidato, moran_i_votes, moran_i_prop, total_votes):
+def insert_candidate_moran(conn, sq_candidato, moran_i_votes, moran_i_prop, total_votes, tipo=1):
     """
     Insere uma linha em eleicoes22.calc_moran_dep_e_partido
     para o candidato dado.
@@ -207,7 +243,7 @@ def insert_candidate_moran(conn, sq_candidato, moran_i_votes, moran_i_prop, tota
             moran_i_proporcional,
             bucket_moran_proporcional
         )
-        VALUES (%s, 1, %s, NULL, %s, %s, NULL)
+        VALUES (%s, %s, %s, NULL, %s, %s, NULL)
         ON CONFLICT (sequencial_ou_sigla_partido) DO NOTHING
     """
     with conn.cursor() as cur:
@@ -215,6 +251,7 @@ def insert_candidate_moran(conn, sq_candidato, moran_i_votes, moran_i_prop, tota
             sql,
             (
                 str(sq_candidato),
+                str(tipo),
                 moran_i_votes,
                 total_votes,
                 moran_i_prop,
@@ -257,7 +294,6 @@ def update_buckets(conn):
                 WHEN moran_i_proporcional < 0.5 THEN 1
                 ELSE 2
             END
-        WHERE tipo = 1
     """
     with conn.cursor() as cur:
         cur.execute(sql)
@@ -274,7 +310,12 @@ def main():
 
     try:
         logging.info("Buscando candidatos distintos na view...")
-        candidates = fetch_distinct_candidates(conn)
+        if USE_PARTY:
+            candidates = fetch_distinct_parties(conn)
+        else:
+            candidates = fetch_distinct_candidates(conn)
+    
+
         logging.info("Total de candidatos encontrados: %d", len(candidates))
 
         processed = 0
@@ -282,14 +323,17 @@ def main():
 
         for i, sq_candidato in enumerate(tqdm(candidates, desc="Processando candidatos"), start=1):
             # Verifica se já existe na tabela de resultados
-            if candidate_already_processed(conn, sq_candidato):
+            if item_already_processed(conn, sq_candidato):
                 skipped += 1
                 continue
 
             # logging.info("(%d/%d) Carregando dados do candidato %s",
             #              i, len(candidates), sq_candidato)
 
-            gdf = load_candidate_geodata(engine, sq_candidato)
+            if USE_PARTY:
+                gdf = load_party_geodata(engine, sq_candidato)
+            else:
+                gdf = load_candidate_geodata(engine, sq_candidato)
 
             result = compute_moran_for_candidate(gdf, sq_candidato=sq_candidato)
             if result is None:
@@ -308,7 +352,9 @@ def main():
             #     total_votes,
             # )
 
-            insert_candidate_moran(conn, sq_candidato, moran_i_votes, moran_i_prop, total_votes)
+            tipo = 2 if USE_PARTY else 1
+
+            insert_candidate_moran(conn, sq_candidato, moran_i_votes, moran_i_prop, total_votes, tipo=tipo)
             processed += 1
 
             # Commit periódico
