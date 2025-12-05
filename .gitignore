@@ -1,6 +1,5 @@
 *.zip
 *.csv
-*.pdf
 *.xlsx
 
 *dump*.sql
@@ -10,10 +9,11 @@ data/
 
 __pycache__/
 
-eleicoes22_*.md
 *.html
 
 output/
 *.png
 *.gpkg
 desktop.ini
+
+data_sources/

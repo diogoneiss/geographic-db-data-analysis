@@ -1,0 +1,648 @@
+<Layout printResolution="300" name="populacao" units="mm" worldFileMap="{51f2352a-fba4-4d6f-b0aa-52a5d50db764}">
+ <Snapper snapToItems="1" snapToGrid="0" tolerance="4" snapToGuides="1"/>
+ <Grid resUnits="mm" offsetX="0" offsetY="0" offsetUnits="mm" resolution="10"/>
+ <PageCollection>
+  <symbol clip_to_extent="1" name="" frame_rate="10" force_rhr="0" is_animated="0" alpha="1" type="fill">
+   <data_defined_properties>
+    <Option type="Map">
+     <Option name="name" value="" type="QString"/>
+     <Option name="properties"/>
+     <Option name="type" value="collection" type="QString"/>
+    </Option>
+   </data_defined_properties>
+   <layer enabled="1" class="SimpleFill" pass="0" locked="0" id="{067f583f-afaa-48a1-bb52-a285f960bd90}">
+    <Option type="Map">
+     <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+     <Option name="color" value="255,255,255,255,rgb:1,1,1,1" type="QString"/>
+     <Option name="joinstyle" value="miter" type="QString"/>
+     <Option name="offset" value="0,0" type="QString"/>
+     <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+     <Option name="offset_unit" value="MM" type="QString"/>
+     <Option name="outline_color" value="35,35,35,255,rgb:0.1372549,0.1372549,0.1372549,1" type="QString"/>
+     <Option name="outline_style" value="no" type="QString"/>
+     <Option name="outline_width" value="0.26" type="QString"/>
+     <Option name="outline_width_unit" value="MM" type="QString"/>
+     <Option name="style" value="solid" type="QString"/>
+    </Option>
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" value="" type="QString"/>
+      <Option name="properties"/>
+      <Option name="type" value="collection" type="QString"/>
+     </Option>
+    </data_defined_properties>
+   </layer>
+  </symbol>
+  <LayoutItem uuid="{edd21525-3a6c-43b7-a861-b33bd41ad63e}" size="297,210,mm" background="true" outlineWidthM="0.3,mm" referencePoint="0" templateUuid="{edd21525-3a6c-43b7-a861-b33bd41ad63e}" zValue="0" groupUuid="" type="65638" blendMode="0" itemRotation="0" positionOnPage="0,0,mm" id="" frameJoinStyle="miter" position="0,0,mm" frame="false" excludeFromExports="0" positionLock="false" visibility="1" opacity="1">
+   <FrameColor blue="0" red="0" green="0" alpha="255"/>
+   <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+   <LayoutObject>
+    <dataDefinedProperties>
+     <Option type="Map">
+      <Option name="name" value="" type="QString"/>
+      <Option name="properties"/>
+      <Option name="type" value="collection" type="QString"/>
+     </Option>
+    </dataDefinedProperties>
+    <customproperties>
+     <Option/>
+    </customproperties>
+   </LayoutObject>
+   <symbol clip_to_extent="1" name="" frame_rate="10" force_rhr="0" is_animated="0" alpha="1" type="fill">
+    <data_defined_properties>
+     <Option type="Map">
+      <Option name="name" value="" type="QString"/>
+      <Option name="properties"/>
+      <Option name="type" value="collection" type="QString"/>
+     </Option>
+    </data_defined_properties>
+    <layer enabled="1" class="SimpleFill" pass="0" locked="0" id="{22aef828-87a5-4db2-94c9-89315ffc028e}">
+     <Option type="Map">
+      <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+      <Option name="color" value="255,255,255,255,rgb:1,1,1,1" type="QString"/>
+      <Option name="joinstyle" value="miter" type="QString"/>
+      <Option name="offset" value="0,0" type="QString"/>
+      <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+      <Option name="offset_unit" value="MM" type="QString"/>
+      <Option name="outline_color" value="35,35,35,255,rgb:0.1372549,0.1372549,0.1372549,1" type="QString"/>
+      <Option name="outline_style" value="no" type="QString"/>
+      <Option name="outline_width" value="0.26" type="QString"/>
+      <Option name="outline_width_unit" value="MM" type="QString"/>
+      <Option name="style" value="solid" type="QString"/>
+     </Option>
+     <data_defined_properties>
+      <Option type="Map">
+       <Option name="name" value="" type="QString"/>
+       <Option name="properties"/>
+       <Option name="type" value="collection" type="QString"/>
+      </Option>
+     </data_defined_properties>
+    </layer>
+   </symbol>
+  </LayoutItem>
+  <GuideCollection visible="1"/>
+ </PageCollection>
+ <LayoutItem size="52.2807,55.7704,mm" positionOnPage="21.8197,123.156,mm" positionLock="false" wmsLegendHeight="25" legendFilterByAtlas="1" groupUuid="" map_uuid="{51f2352a-fba4-4d6f-b0aa-52a5d50db764}" rasterBorderColor="0,0,0,255,rgb:0,0,0,1" id="" frameJoinStyle="miter" equalColumnWidth="0" referencePoint="0" boxSpace="2" symbolHeight="4" outlineWidthM="0.3,mm" minSymbolSize="0" symbolWidth="7" visibility="1" rasterBorder="1" templateUuid="{5bb1359a-c3ac-4bbe-95e9-d2b106b9a3f2}" columnSpace="2" rasterBorderWidth="0" columnCount="1" legendFilterByMap="1" itemRotation="0" opacity="1" resizeToContents="1" titleAlignment="1" title="" frame="false" uuid="{5bb1359a-c3ac-4bbe-95e9-d2b106b9a3f2}" splitLayer="0" position="21.8197,123.156,mm" wmsLegendWidth="50" maxSymbolSize="0" symbolAlignment="1" background="true" wrapChar="" type="65642" blendMode="0" zValue="2" excludeFromExports="0">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" value="" type="QString"/>
+     <Option name="properties"/>
+     <Option name="type" value="collection" type="QString"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <filterByMaps>
+   <map uuid="{51f2352a-fba4-4d6f-b0aa-52a5d50db764}"/>
+  </filterByMaps>
+  <styles>
+   <style alignment="1" marginBottom="3.5" name="title" indent="0">
+    <text-style fontWeight="50" textOrientation="horizontal" fontSizeUnit="Point" fontWordSpacing="0" fontFamily="MS Shell Dlg 2" textColor="0,0,0,255,rgb:0,0,0,1" fontKerning="1" fontLetterSpacing="0" textOpacity="1" fontItalic="0" namedStyle="" stretchFactor="100" allowHtml="0" multilineHeight="1.1000000000000001" tabStopDistanceUnit="Percentage" forcedItalic="0" tabStopDistanceMapUnitScale="3x:0,0,0,0,0,0" forcedBold="0" previewBkgrdColor="255,255,255,255,rgb:1,1,1,1" blendMode="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" multilineHeightUnit="Percentage" capitalization="0" fontSize="16" fontUnderline="0" fontStrikeout="0" tabStopDistance="6">
+     <families/>
+     <text-buffer bufferSize="1" bufferColor="255,255,255,255,rgb:1,1,1,1" bufferBlendMode="0" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferSizeUnits="MM" bufferDraw="0" bufferJoinStyle="128" bufferOpacity="1" bufferNoFill="1"/>
+     <text-mask maskedSymbolLayers="" maskSize2="1.5" maskSizeUnits="MM" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskEnabled="0" maskType="0" maskSize="1.5" maskJoinStyle="128" maskOpacity="1"/>
+     <background shapeOffsetUnit="MM" shapeSizeType="0" shapeRadiiY="0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeType="0" shapeFillColor="255,255,255,255,rgb:1,1,1,1" shapeRotation="0" shapeRotationType="0" shapeOffsetY="0" shapeRadiiX="0" shapeRadiiUnit="MM" shapeJoinStyle="64" shapeOpacity="1" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeSizeY="0" shapeBlendMode="0" shapeOffsetX="0" shapeBorderColor="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" shapeSizeX="0" shapeBorderWidthUnit="MM" shapeSVGFile="" shapeDraw="0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeBorderWidth="0" shapeSizeUnit="MM">
+      <symbol clip_to_extent="1" name="fillSymbol" frame_rate="10" force_rhr="0" is_animated="0" alpha="1" type="fill">
+       <data_defined_properties>
+        <Option type="Map">
+         <Option name="name" value="" type="QString"/>
+         <Option name="properties"/>
+         <Option name="type" value="collection" type="QString"/>
+        </Option>
+       </data_defined_properties>
+       <layer enabled="1" class="SimpleFill" pass="0" locked="0" id="">
+        <Option type="Map">
+         <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="color" value="255,255,255,255,rgb:1,1,1,1" type="QString"/>
+         <Option name="joinstyle" value="bevel" type="QString"/>
+         <Option name="offset" value="0,0" type="QString"/>
+         <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="offset_unit" value="MM" type="QString"/>
+         <Option name="outline_color" value="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" type="QString"/>
+         <Option name="outline_style" value="no" type="QString"/>
+         <Option name="outline_width" value="0" type="QString"/>
+         <Option name="outline_width_unit" value="MM" type="QString"/>
+         <Option name="style" value="solid" type="QString"/>
+        </Option>
+        <data_defined_properties>
+         <Option type="Map">
+          <Option name="name" value="" type="QString"/>
+          <Option name="properties"/>
+          <Option name="type" value="collection" type="QString"/>
+         </Option>
+        </data_defined_properties>
+       </layer>
+      </symbol>
+     </background>
+     <shadow shadowOpacity="0.69999999999999996" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowOffsetUnit="MM" shadowRadius="1.5" shadowRadiusAlphaOnly="0" shadowOffsetDist="1" shadowDraw="0" shadowScale="100" shadowUnder="0" shadowOffsetGlobal="1" shadowColor="0,0,0,255,rgb:0,0,0,1" shadowBlendMode="6" shadowOffsetAngle="135" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowRadiusUnit="MM"/>
+     <dd_properties>
+      <Option type="Map">
+       <Option name="name" value="" type="QString"/>
+       <Option name="properties"/>
+       <Option name="type" value="collection" type="QString"/>
+      </Option>
+     </dd_properties>
+    </text-style>
+   </style>
+   <style alignment="1" name="group" indent="0" marginTop="3">
+    <text-style fontWeight="50" textOrientation="horizontal" fontSizeUnit="Point" fontWordSpacing="0" fontFamily="MS Shell Dlg 2" textColor="0,0,0,255,rgb:0,0,0,1" fontKerning="1" fontLetterSpacing="0" textOpacity="1" fontItalic="0" namedStyle="" stretchFactor="100" allowHtml="0" multilineHeight="1.1000000000000001" tabStopDistanceUnit="Percentage" forcedItalic="0" tabStopDistanceMapUnitScale="3x:0,0,0,0,0,0" forcedBold="0" previewBkgrdColor="255,255,255,255,rgb:1,1,1,1" blendMode="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" multilineHeightUnit="Percentage" capitalization="0" fontSize="14" fontUnderline="0" fontStrikeout="0" tabStopDistance="6">
+     <families/>
+     <text-buffer bufferSize="1" bufferColor="255,255,255,255,rgb:1,1,1,1" bufferBlendMode="0" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferSizeUnits="MM" bufferDraw="0" bufferJoinStyle="128" bufferOpacity="1" bufferNoFill="1"/>
+     <text-mask maskedSymbolLayers="" maskSize2="1.5" maskSizeUnits="MM" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskEnabled="0" maskType="0" maskSize="1.5" maskJoinStyle="128" maskOpacity="1"/>
+     <background shapeOffsetUnit="MM" shapeSizeType="0" shapeRadiiY="0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeType="0" shapeFillColor="255,255,255,255,rgb:1,1,1,1" shapeRotation="0" shapeRotationType="0" shapeOffsetY="0" shapeRadiiX="0" shapeRadiiUnit="MM" shapeJoinStyle="64" shapeOpacity="1" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeSizeY="0" shapeBlendMode="0" shapeOffsetX="0" shapeBorderColor="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" shapeSizeX="0" shapeBorderWidthUnit="MM" shapeSVGFile="" shapeDraw="0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeBorderWidth="0" shapeSizeUnit="MM">
+      <symbol clip_to_extent="1" name="fillSymbol" frame_rate="10" force_rhr="0" is_animated="0" alpha="1" type="fill">
+       <data_defined_properties>
+        <Option type="Map">
+         <Option name="name" value="" type="QString"/>
+         <Option name="properties"/>
+         <Option name="type" value="collection" type="QString"/>
+        </Option>
+       </data_defined_properties>
+       <layer enabled="1" class="SimpleFill" pass="0" locked="0" id="">
+        <Option type="Map">
+         <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="color" value="255,255,255,255,rgb:1,1,1,1" type="QString"/>
+         <Option name="joinstyle" value="bevel" type="QString"/>
+         <Option name="offset" value="0,0" type="QString"/>
+         <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="offset_unit" value="MM" type="QString"/>
+         <Option name="outline_color" value="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" type="QString"/>
+         <Option name="outline_style" value="no" type="QString"/>
+         <Option name="outline_width" value="0" type="QString"/>
+         <Option name="outline_width_unit" value="MM" type="QString"/>
+         <Option name="style" value="solid" type="QString"/>
+        </Option>
+        <data_defined_properties>
+         <Option type="Map">
+          <Option name="name" value="" type="QString"/>
+          <Option name="properties"/>
+          <Option name="type" value="collection" type="QString"/>
+         </Option>
+        </data_defined_properties>
+       </layer>
+      </symbol>
+     </background>
+     <shadow shadowOpacity="0.69999999999999996" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowOffsetUnit="MM" shadowRadius="1.5" shadowRadiusAlphaOnly="0" shadowOffsetDist="1" shadowDraw="0" shadowScale="100" shadowUnder="0" shadowOffsetGlobal="1" shadowColor="0,0,0,255,rgb:0,0,0,1" shadowBlendMode="6" shadowOffsetAngle="135" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowRadiusUnit="MM"/>
+     <dd_properties>
+      <Option type="Map">
+       <Option name="name" value="" type="QString"/>
+       <Option name="properties"/>
+       <Option name="type" value="collection" type="QString"/>
+      </Option>
+     </dd_properties>
+    </text-style>
+   </style>
+   <style alignment="1" name="subgroup" indent="0" marginTop="3">
+    <text-style fontWeight="50" textOrientation="horizontal" fontSizeUnit="Point" fontWordSpacing="0" fontFamily="MS Shell Dlg 2" textColor="0,0,0,255,rgb:0,0,0,1" fontKerning="1" fontLetterSpacing="0" textOpacity="1" fontItalic="0" namedStyle="" stretchFactor="100" allowHtml="0" multilineHeight="1.1000000000000001" tabStopDistanceUnit="Percentage" forcedItalic="0" tabStopDistanceMapUnitScale="3x:0,0,0,0,0,0" forcedBold="0" previewBkgrdColor="255,255,255,255,rgb:1,1,1,1" blendMode="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" multilineHeightUnit="Percentage" capitalization="0" fontSize="12" fontUnderline="0" fontStrikeout="0" tabStopDistance="6">
+     <families/>
+     <text-buffer bufferSize="1" bufferColor="255,255,255,255,rgb:1,1,1,1" bufferBlendMode="0" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferSizeUnits="MM" bufferDraw="0" bufferJoinStyle="128" bufferOpacity="1" bufferNoFill="1"/>
+     <text-mask maskedSymbolLayers="" maskSize2="1.5" maskSizeUnits="MM" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskEnabled="0" maskType="0" maskSize="1.5" maskJoinStyle="128" maskOpacity="1"/>
+     <background shapeOffsetUnit="MM" shapeSizeType="0" shapeRadiiY="0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeType="0" shapeFillColor="255,255,255,255,rgb:1,1,1,1" shapeRotation="0" shapeRotationType="0" shapeOffsetY="0" shapeRadiiX="0" shapeRadiiUnit="MM" shapeJoinStyle="64" shapeOpacity="1" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeSizeY="0" shapeBlendMode="0" shapeOffsetX="0" shapeBorderColor="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" shapeSizeX="0" shapeBorderWidthUnit="MM" shapeSVGFile="" shapeDraw="0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeBorderWidth="0" shapeSizeUnit="MM">
+      <symbol clip_to_extent="1" name="fillSymbol" frame_rate="10" force_rhr="0" is_animated="0" alpha="1" type="fill">
+       <data_defined_properties>
+        <Option type="Map">
+         <Option name="name" value="" type="QString"/>
+         <Option name="properties"/>
+         <Option name="type" value="collection" type="QString"/>
+        </Option>
+       </data_defined_properties>
+       <layer enabled="1" class="SimpleFill" pass="0" locked="0" id="">
+        <Option type="Map">
+         <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="color" value="255,255,255,255,rgb:1,1,1,1" type="QString"/>
+         <Option name="joinstyle" value="bevel" type="QString"/>
+         <Option name="offset" value="0,0" type="QString"/>
+         <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="offset_unit" value="MM" type="QString"/>
+         <Option name="outline_color" value="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" type="QString"/>
+         <Option name="outline_style" value="no" type="QString"/>
+         <Option name="outline_width" value="0" type="QString"/>
+         <Option name="outline_width_unit" value="MM" type="QString"/>
+         <Option name="style" value="solid" type="QString"/>
+        </Option>
+        <data_defined_properties>
+         <Option type="Map">
+          <Option name="name" value="" type="QString"/>
+          <Option name="properties"/>
+          <Option name="type" value="collection" type="QString"/>
+         </Option>
+        </data_defined_properties>
+       </layer>
+      </symbol>
+     </background>
+     <shadow shadowOpacity="0.69999999999999996" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowOffsetUnit="MM" shadowRadius="1.5" shadowRadiusAlphaOnly="0" shadowOffsetDist="1" shadowDraw="0" shadowScale="100" shadowUnder="0" shadowOffsetGlobal="1" shadowColor="0,0,0,255,rgb:0,0,0,1" shadowBlendMode="6" shadowOffsetAngle="135" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowRadiusUnit="MM"/>
+     <dd_properties>
+      <Option type="Map">
+       <Option name="name" value="" type="QString"/>
+       <Option name="properties"/>
+       <Option name="type" value="collection" type="QString"/>
+      </Option>
+     </dd_properties>
+    </text-style>
+   </style>
+   <style alignment="1" name="symbol" indent="0" marginTop="2.5">
+    <text-style fontWeight="50" textOrientation="horizontal" fontSizeUnit="Point" fontWordSpacing="0" fontFamily="MS Shell Dlg 2" textColor="0,0,0,255,rgb:0,0,0,1" fontKerning="1" fontLetterSpacing="0" textOpacity="1" fontItalic="0" namedStyle="" stretchFactor="100" allowHtml="0" multilineHeight="1" tabStopDistanceUnit="Percentage" forcedItalic="0" tabStopDistanceMapUnitScale="3x:0,0,0,0,0,0" forcedBold="0" previewBkgrdColor="255,255,255,255,rgb:1,1,1,1" blendMode="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" multilineHeightUnit="Percentage" capitalization="0" fontSize="10" fontUnderline="0" fontStrikeout="0" tabStopDistance="6">
+     <families/>
+     <text-buffer bufferSize="1" bufferColor="255,255,255,255,rgb:1,1,1,1" bufferBlendMode="0" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferSizeUnits="MM" bufferDraw="0" bufferJoinStyle="128" bufferOpacity="1" bufferNoFill="1"/>
+     <text-mask maskedSymbolLayers="" maskSize2="1.5" maskSizeUnits="MM" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskEnabled="0" maskType="0" maskSize="1.5" maskJoinStyle="128" maskOpacity="1"/>
+     <background shapeOffsetUnit="MM" shapeSizeType="0" shapeRadiiY="0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeType="0" shapeFillColor="255,255,255,255,rgb:1,1,1,1" shapeRotation="0" shapeRotationType="0" shapeOffsetY="0" shapeRadiiX="0" shapeRadiiUnit="MM" shapeJoinStyle="64" shapeOpacity="1" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeSizeY="0" shapeBlendMode="0" shapeOffsetX="0" shapeBorderColor="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" shapeSizeX="0" shapeBorderWidthUnit="MM" shapeSVGFile="" shapeDraw="0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeBorderWidth="0" shapeSizeUnit="MM">
+      <symbol clip_to_extent="1" name="fillSymbol" frame_rate="10" force_rhr="0" is_animated="0" alpha="1" type="fill">
+       <data_defined_properties>
+        <Option type="Map">
+         <Option name="name" value="" type="QString"/>
+         <Option name="properties"/>
+         <Option name="type" value="collection" type="QString"/>
+        </Option>
+       </data_defined_properties>
+       <layer enabled="1" class="SimpleFill" pass="0" locked="0" id="">
+        <Option type="Map">
+         <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="color" value="255,255,255,255,rgb:1,1,1,1" type="QString"/>
+         <Option name="joinstyle" value="bevel" type="QString"/>
+         <Option name="offset" value="0,0" type="QString"/>
+         <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="offset_unit" value="MM" type="QString"/>
+         <Option name="outline_color" value="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" type="QString"/>
+         <Option name="outline_style" value="no" type="QString"/>
+         <Option name="outline_width" value="0" type="QString"/>
+         <Option name="outline_width_unit" value="MM" type="QString"/>
+         <Option name="style" value="solid" type="QString"/>
+        </Option>
+        <data_defined_properties>
+         <Option type="Map">
+          <Option name="name" value="" type="QString"/>
+          <Option name="properties"/>
+          <Option name="type" value="collection" type="QString"/>
+         </Option>
+        </data_defined_properties>
+       </layer>
+      </symbol>
+     </background>
+     <shadow shadowOpacity="0.69999999999999996" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowOffsetUnit="MM" shadowRadius="1.5" shadowRadiusAlphaOnly="0" shadowOffsetDist="1" shadowDraw="0" shadowScale="100" shadowUnder="0" shadowOffsetGlobal="1" shadowColor="0,0,0,255,rgb:0,0,0,1" shadowBlendMode="6" shadowOffsetAngle="135" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowRadiusUnit="MM"/>
+     <dd_properties>
+      <Option type="Map">
+       <Option name="name" value="" type="QString"/>
+       <Option name="properties"/>
+       <Option name="type" value="collection" type="QString"/>
+      </Option>
+     </dd_properties>
+    </text-style>
+   </style>
+   <style alignment="1" name="symbolLabel" indent="0" marginLeft="2" marginTop="2">
+    <text-style fontWeight="50" textOrientation="horizontal" fontSizeUnit="Point" fontWordSpacing="0" fontFamily="MS Shell Dlg 2" textColor="0,0,0,255,rgb:0,0,0,1" fontKerning="1" fontLetterSpacing="0" textOpacity="1" fontItalic="0" namedStyle="" stretchFactor="100" allowHtml="0" multilineHeight="1.1000000000000001" tabStopDistanceUnit="Percentage" forcedItalic="0" tabStopDistanceMapUnitScale="3x:0,0,0,0,0,0" forcedBold="0" previewBkgrdColor="255,255,255,255,rgb:1,1,1,1" blendMode="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" multilineHeightUnit="Percentage" capitalization="0" fontSize="12" fontUnderline="0" fontStrikeout="0" tabStopDistance="6">
+     <families/>
+     <text-buffer bufferSize="1" bufferColor="255,255,255,255,rgb:1,1,1,1" bufferBlendMode="0" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferSizeUnits="MM" bufferDraw="0" bufferJoinStyle="128" bufferOpacity="1" bufferNoFill="1"/>
+     <text-mask maskedSymbolLayers="" maskSize2="1.5" maskSizeUnits="MM" maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskEnabled="0" maskType="0" maskSize="1.5" maskJoinStyle="128" maskOpacity="1"/>
+     <background shapeOffsetUnit="MM" shapeSizeType="0" shapeRadiiY="0" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeType="0" shapeFillColor="255,255,255,255,rgb:1,1,1,1" shapeRotation="0" shapeRotationType="0" shapeOffsetY="0" shapeRadiiX="0" shapeRadiiUnit="MM" shapeJoinStyle="64" shapeOpacity="1" shapeSizeMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeSizeY="0" shapeBlendMode="0" shapeOffsetX="0" shapeBorderColor="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" shapeSizeX="0" shapeBorderWidthUnit="MM" shapeSVGFile="" shapeDraw="0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeBorderWidth="0" shapeSizeUnit="MM">
+      <symbol clip_to_extent="1" name="fillSymbol" frame_rate="10" force_rhr="0" is_animated="0" alpha="1" type="fill">
+       <data_defined_properties>
+        <Option type="Map">
+         <Option name="name" value="" type="QString"/>
+         <Option name="properties"/>
+         <Option name="type" value="collection" type="QString"/>
+        </Option>
+       </data_defined_properties>
+       <layer enabled="1" class="SimpleFill" pass="0" locked="0" id="">
+        <Option type="Map">
+         <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="color" value="255,255,255,255,rgb:1,1,1,1" type="QString"/>
+         <Option name="joinstyle" value="bevel" type="QString"/>
+         <Option name="offset" value="0,0" type="QString"/>
+         <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+         <Option name="offset_unit" value="MM" type="QString"/>
+         <Option name="outline_color" value="128,128,128,255,rgb:0.5019608,0.5019608,0.5019608,1" type="QString"/>
+         <Option name="outline_style" value="no" type="QString"/>
+         <Option name="outline_width" value="0" type="QString"/>
+         <Option name="outline_width_unit" value="MM" type="QString"/>
+         <Option name="style" value="solid" type="QString"/>
+        </Option>
+        <data_defined_properties>
+         <Option type="Map">
+          <Option name="name" value="" type="QString"/>
+          <Option name="properties"/>
+          <Option name="type" value="collection" type="QString"/>
+         </Option>
+        </data_defined_properties>
+       </layer>
+      </symbol>
+     </background>
+     <shadow shadowOpacity="0.69999999999999996" shadowRadiusMapUnitScale="3x:0,0,0,0,0,0" shadowOffsetUnit="MM" shadowRadius="1.5" shadowRadiusAlphaOnly="0" shadowOffsetDist="1" shadowDraw="0" shadowScale="100" shadowUnder="0" shadowOffsetGlobal="1" shadowColor="0,0,0,255,rgb:0,0,0,1" shadowBlendMode="6" shadowOffsetAngle="135" shadowOffsetMapUnitScale="3x:0,0,0,0,0,0" shadowRadiusUnit="MM"/>
+     <dd_properties>
+      <Option type="Map">
+       <Option name="name" value="" type="QString"/>
+       <Option name="properties"/>
+       <Option name="type" value="collection" type="QString"/>
+      </Option>
+     </dd_properties>
+    </text-style>
+   </style>
+  </styles>
+  <layer-tree-group>
+   <customproperties>
+    <Option/>
+   </customproperties>
+   <layer-tree-layer legend_exp="" legend_split_behavior="0" name="agg_mun_dados_censitarios_e_socioeconomicos" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_mun_dados_censitarios_e_socioeconomicos&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="1" id="agg_mun_dados_censitarios_e_socioeconomicos_527d4aa6_8c1e_4f05_87fc_f01513854522">
+    <customproperties>
+     <Option type="Map">
+      <Option name="cached_name" value="agg_mun_dados_censitarios_e_socioeconomicos" type="QString"/>
+     </Option>
+    </customproperties>
+   </layer-tree-layer>
+   <layer-tree-group name="dados agregados" checked="Qt::Checked" groupLayer="" expanded="0">
+    <customproperties>
+     <Option/>
+    </customproperties>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="party_pt_intermediaria" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_regiao_intermediaria' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;data_vis&quot;.&quot;party_pt_intermediaria&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="1" id="party_pt_intermediaria_f1620724_d35b_4c54_ac57_7933d6fac024">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="party_pt_intermediaria" type="QString"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="dados_pt_regiao_imediata copy" source="dbname='gis' host=localhost port=5434 user='postgres' key='id_regiao_imediata' estimatedmetadata=true checkPrimaryKeyUnicity='1' table=&quot;(    SELECT d.id_regiao_imediata,            d.nome_regiao_imediata,            SUM(p.qt_votos) as qt_votos,            SUM(p.qt_votos)::float / SUM(p.populacao) as votos_por_pop,            SUM(p.quantidade_alunos_inse) as quantidade_alunos_inse,            AVG(p.inse) as inse,               SUM(p.domicilios) as domicilios,               SUM(p.populacao) as populacao,               SUM(p.area) as area,                 AVG(p.taxa_alfabetizacao) as taxa_alfabetizacao,         SUM(p.populacao_indigena) as populacao_indigena,         SUM(p.populacao_indigena_terra_indigena) as populacao_indigena_terra_indigena,         SUM(p.populacao_quilombola) as populacao_quilombola,         SUM(p.populacao_quilombola_territorio_quilombola) as populacao_quilombola_territorio_quilombola,         i.geometria as geom     from data_vis.party_pt p              JOIN eleicoes22.br_bd_diretorios_brasil_municipio d ON p.id_municipio = d.id_municipio              JOIN eleicoes22.br_geobr_mapas_regiao_imediata i on i.id_regiao_imediata = d.id_regiao_imediata     group by  d.id_regiao_imediata, d.nome_regiao_imediata, i.geometria)&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="1" id="dados_pt_regiao_imediata_fbf6c8ec_2bf8_48ad_ba48_2c54150b3a0a">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="dados_pt_regiao_imediata copy" type="QString"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-group name="overlay_votos_pt" checked="Qt::Unchecked" groupLayer="" expanded="0">
+     <customproperties>
+      <Option/>
+     </customproperties>
+     <layer-tree-layer legend_exp="" legend_split_behavior="0" name="dados_pt_regiao_imediata" source="dbname='gis' host=localhost port=5434 user='postgres' key='id_regiao_imediata' estimatedmetadata=true checkPrimaryKeyUnicity='1' table=&quot;(    SELECT d.id_regiao_imediata,            d.nome_regiao_imediata,            SUM(p.qt_votos) as qt_votos,            SUM(p.qt_votos)::float / SUM(p.populacao) as votos_por_pop,            SUM(p.quantidade_alunos_inse) as quantidade_alunos_inse,            AVG(p.inse) as inse,               SUM(p.domicilios) as domicilios,               SUM(p.populacao) as populacao,               SUM(p.area) as area,                 AVG(p.taxa_alfabetizacao) as taxa_alfabetizacao,         SUM(p.populacao_indigena) as populacao_indigena,         SUM(p.populacao_indigena_terra_indigena) as populacao_indigena_terra_indigena,         SUM(p.populacao_quilombola) as populacao_quilombola,         SUM(p.populacao_quilombola_territorio_quilombola) as populacao_quilombola_territorio_quilombola,         i.geometria as geom     from data_vis.party_pt p              JOIN eleicoes22.br_bd_diretorios_brasil_municipio d ON p.id_municipio = d.id_municipio              JOIN eleicoes22.br_geobr_mapas_regiao_imediata i on i.id_regiao_imediata = d.id_regiao_imediata     group by  d.id_regiao_imediata, d.nome_regiao_imediata, i.geometria)&quot; (geom)" checked="Qt::Checked" patch_size="-1,-1" providerKey="postgres" expanded="1" id="layername_df940335_a36a_436a_afc8_fd6f7c95c713">
+      <customproperties>
+       <Option type="Map">
+        <Option name="cached_name" value="dados_pt_regiao_imediata" type="QString"/>
+       </Option>
+      </customproperties>
+     </layer-tree-layer>
+     <layer-tree-layer legend_exp="" legend_split_behavior="0" name="party_pt_intermediaria_linhas" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_regiao_intermediaria' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;data_vis&quot;.&quot;party_pt_intermediaria&quot; (geom)" checked="Qt::Checked" patch_size="-1,-1" providerKey="postgres" expanded="1" id="party_pt_intermediaria_ee92a142_470e_4b66_9f6f_ab28c9ce3888">
+      <customproperties>
+       <Option type="Map">
+        <Option name="cached_name" value="party_pt_intermediaria_linhas" type="QString"/>
+       </Option>
+      </customproperties>
+     </layer-tree-layer>
+    </layer-tree-group>
+   </layer-tree-group>
+   <layer-tree-layer legend_exp="" legend_split_behavior="0" name="populacao municipios" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_mun_dados_censitarios_e_socioeconomicos&quot; (geom)" checked="Qt::Checked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="agg_mun_dados_censitarios_e_socioeconomicos_3ef59b19_192c_4eab_a17c_d34765b485a6">
+    <customproperties>
+     <Option type="Map">
+      <Option name="cached_name" value="populacao municipios" type="QString"/>
+     </Option>
+    </customproperties>
+   </layer-tree-layer>
+   <layer-tree-group name="dados eleitorais" checked="Qt::Unchecked" groupLayer="" expanded="0">
+    <customproperties>
+     <Option/>
+    </customproperties>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="agg_eleicao_e_outras_bases_ANA_CAMPAGNOLO  - votos relativos" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_eleicao_e_outras_bases_materialized&quot; (geom) sql=&quot;sq_candidato&quot; = '240001614348'" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="agg_eleicao_e_outras_bases_materialized_9dd0d274_4ac8_4d71_aa1f_eefd2a1df358">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="agg_eleicao_e_outras_bases_ANA_CAMPAGNOLO  - votos relativos" type="QString"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="agg_eleicao_e_outras_bases_ANA_CAMPAGNOLO" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_eleicao_e_outras_bases_materialized&quot; (geom) sql=&quot;sq_candidato&quot; = '240001614348'" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="agg_eleicao_e_outras_bases_materialized_aa96e8e1_ebea_49fd_9f92_ad20754879b5">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="agg_eleicao_e_outras_bases_ANA_CAMPAGNOLO" type="QString"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="dep_tiago_zilli_mdb" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;data_vis&quot;.&quot;dep_tiago_zilli_mdb&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="dep_tiago_zilli_mdb_d71f2e6b_a08d_4243_8e4f_0a0b23e9f2e3">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="dep_tiago_zilli_mdb" type="QString"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="dep_tiago_zilli_mdb proporcional" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;data_vis&quot;.&quot;dep_tiago_zilli_mdb&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="dep_tiago_zilli_mdb_87e67647_f7e5_4956_9323_41483e82daf7">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="dep_tiago_zilli_mdb proporcional" type="QString"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+   </layer-tree-group>
+   <layer-tree-group name="Investigacao dados socioecom" checked="Qt::Unchecked" groupLayer="" expanded="0">
+    <customproperties>
+     <Option/>
+    </customproperties>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="agg_mun_dados_censitarios_e_socioeconomicos_inse" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_mun_dados_censitarios_e_socioeconomicos&quot; (geom)" checked="Qt::Checked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="agg_mun_dados_censitarios_e_socioeconomicos_inse_3e627aba_8387_46e9_9ee9_01d40a3edad4">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="agg_mun_dados_censitarios_e_socioeconomicos_inse" type="QString"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="agg_mun_dados_censitarios_e_socioeconomicos - indigenas" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_mun_dados_censitarios_e_socioeconomicos&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="agg_mun_dados_censitarios_e_socioeconomicos_07fe017c_7b55_4874_99b5_57653f8471b6">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="agg_mun_dados_censitarios_e_socioeconomicos - indigenas" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="agg_mun_dados_censitarios_e_socioeconomicos - quilombolas" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_mun_dados_censitarios_e_socioeconomicos&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="agg_mun_dados_censitarios_e_socioeconomicos___indigenas_4962a0fe_18c2_4dec_bee4_86ba9864a9f8">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="agg_mun_dados_censitarios_e_socioeconomicos - quilombolas" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="Query socioecon" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' checkPrimaryKeyUnicity='0' table=&quot;(SELECT d.id_municipio,&#xd;&#xa;       d.nome      AS nm_municipio,&#xd;&#xa;       c.populacao,&#xd;&#xa;       c.area,&#xd;&#xa;       c.taxa_alfabetizacao,&#xd;&#xa;       c.idade_mediana,&#xd;&#xa;       c.razao_sexo,&#xd;&#xa;       c.indice_envelhecimento,&#xd;&#xa;       c.populacao_indigena,&#xd;&#xa;       c.populacao_indigena_terra_indigena,&#xd;&#xa;       c.populacao_quilombola,&#xd;&#xa;       c.populacao_quilombola_territorio_quilombola,&#xd;&#xa;       d.geometria AS geom&#xd;&#xa;FROM eleicoes22.vw_diretorio_municipio_e_geom d&#xd;&#xa;         JOIN eleicoes22.br_ibge_censo_2022_municipio c ON c.id_municipio = d.id_municipio)&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="Query_socioecon_bff70535_7a0b_4322_9f19_c5792f35b636">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="Query socioecon" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="agg_mun_dados_censitarios_e_socioeconomicos - alfabetizacao" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;agg_mun_dados_censitarios_e_socioeconomicos&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="agg_mun_dados_censitarios_e_socioeconomicos_e87ace60_0de6_45e2_af81_454c37b7dffd">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="agg_mun_dados_censitarios_e_socioeconomicos - alfabetizacao" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+   </layer-tree-group>
+   <layer-tree-group name="Overlay regioes" checked="Qt::Checked" groupLayer="" expanded="1">
+    <customproperties>
+     <Option/>
+    </customproperties>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="br_geobr_mapas_regiao_intermediaria" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;br_geobr_mapas_regiao_intermediaria&quot; (geometria)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="br_geobr_mapas_regiao_intermediaria_107feae1_8ee8_4c47_8d99_8c91dc33fc44">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="br_geobr_mapas_regiao_intermediaria" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="br_geobr_mapas_regiao_imediata" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;br_geobr_mapas_regiao_imediata&quot; (geometria)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="br_geobr_mapas_regiao_imediata_4bff913b_591a_4ff9_b37d_0e1ee4c70bd4">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="br_geobr_mapas_regiao_imediata" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="vw_diretorio_municipio_e_geom" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=Polygon checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;vw_diretorio_municipio_e_geom&quot; (geometria)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="vw_diretorio_municipio_e_geom_87d5593a_9064_4f82_86f2_bd184ec484cd">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="vw_diretorio_municipio_e_geom" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="br_geobr_mapas_regiao" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;br_geobr_mapas_regiao&quot; (geometria)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="br_geobr_mapas_regiao_1ef63cf3_eced_426d_8918_3af1697ad4c7">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="br_geobr_mapas_regiao" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+   </layer-tree-group>
+   <layer-tree-group name="Municipios" checked="Qt::Unchecked" groupLayer="" expanded="0">
+    <customproperties>
+     <Option/>
+    </customproperties>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="vw_diretorio_municipio_e_geom (apenas SC)" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=Polygon checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;vw_diretorio_municipio_e_geom&quot; (geometria) sql=&quot;sigla_uf&quot; = 'SC'" checked="Qt::Checked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="vw_diretorio_municipio_e_geom_1e8f5618_d5d4_4486_8e2f_55a829603eb7">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="vw_diretorio_municipio_e_geom (apenas SC)" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="vw_diretorio_municipio_e_geom" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='id_municipio' estimatedmetadata=true srid=0 type=Polygon checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;vw_diretorio_municipio_e_geom&quot; (geometria) sql=&quot;sigla_uf&quot; &lt;> 'SC'" checked="Qt::Checked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="vw_diretorio_municipio_e_geom_57eb5628_098f_49c3_afba_c57fb40a4cf5">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="vw_diretorio_municipio_e_geom" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+   </layer-tree-group>
+   <layer-tree-group name="outros" checked="Qt::Unchecked" groupLayer="" expanded="1">
+    <customproperties>
+     <Option/>
+    </customproperties>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="br_ibge_censo_2022_setor_censitario_sc" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=0 type=Polygon checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;br_ibge_censo_2022_setor_censitario_sc&quot; (geometria)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="br_ibge_censo_2022_setor_censitario_sc_3f819a55_def0_4fc7_8ba5_9ce30e060fb1">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="br_ibge_censo_2022_setor_censitario_sc" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="br_bd_diretorios_brasil_municipio" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=0 type=Point checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;br_bd_diretorios_brasil_municipio&quot; (centroide)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="br_bd_diretorios_brasil_municipio_4cfe1a20_1d2a_413f_8b6c_cb014f56dc32">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="br_bd_diretorios_brasil_municipio" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="eleitorado_local_votacao" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=4326 type=Point checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;eleitorado_local_votacao&quot; (geom)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="eleitorado_local_votacao_ccf51516_8c2f_42cb_a937_8c4121c1b6cc">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="eleitorado_local_votacao" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="br_geobr_mapas_limite_vizinhanca" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=0 type=MultiSurface checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;br_geobr_mapas_limite_vizinhanca&quot; (geometria)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="br_geobr_mapas_limite_vizinhanca_50f982e6_bfe1_43ac_b137_b521e80b948f">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="br_geobr_mapas_limite_vizinhanca" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+    <layer-tree-layer legend_exp="" legend_split_behavior="0" name="br_geobr_mapas_municipio" source="dbname='gis' host=localhost port=5434 authcfg=3o7l1x4 key='tid' estimatedmetadata=true srid=0 type=Polygon checkPrimaryKeyUnicity='1' table=&quot;eleicoes22&quot;.&quot;br_geobr_mapas_municipio&quot; (geometria)" checked="Qt::Unchecked" patch_size="-1,-1" providerKey="postgres" expanded="0" id="br_geobr_mapas_municipio_8acff512_9c18_4c38_ae15_3827f162f30d">
+     <customproperties>
+      <Option type="Map">
+       <Option name="cached_name" value="br_geobr_mapas_municipio" type="QString"/>
+       <Option name="expandedLegendNodes" type="invalid"/>
+      </Option>
+     </customproperties>
+    </layer-tree-layer>
+   </layer-tree-group>
+   <custom-order enabled="0">
+    <item>br_geobr_mapas_regiao_imediata_4bff913b_591a_4ff9_b37d_0e1ee4c70bd4</item>
+    <item>br_bd_diretorios_brasil_municipio_4cfe1a20_1d2a_413f_8b6c_cb014f56dc32</item>
+    <item>br_geobr_mapas_limite_vizinhanca_50f982e6_bfe1_43ac_b137_b521e80b948f</item>
+    <item>br_geobr_mapas_regiao_intermediaria_107feae1_8ee8_4c47_8d99_8c91dc33fc44</item>
+    <item>br_geobr_mapas_municipio_8acff512_9c18_4c38_ae15_3827f162f30d</item>
+    <item>eleitorado_local_votacao_ccf51516_8c2f_42cb_a937_8c4121c1b6cc</item>
+    <item>br_ibge_censo_2022_setor_censitario_sc_3f819a55_def0_4fc7_8ba5_9ce30e060fb1</item>
+    <item>vw_diretorio_municipio_e_geom_87d5593a_9064_4f82_86f2_bd184ec484cd</item>
+    <item>vw_diretorio_municipio_e_geom_1e8f5618_d5d4_4486_8e2f_55a829603eb7</item>
+    <item>vw_diretorio_municipio_e_geom_57eb5628_098f_49c3_afba_c57fb40a4cf5</item>
+    <item>br_geobr_mapas_regiao_1ef63cf3_eced_426d_8918_3af1697ad4c7</item>
+    <item>agg_mun_dados_censitarios_e_socioeconomicos_07fe017c_7b55_4874_99b5_57653f8471b6</item>
+    <item>agg_mun_dados_censitarios_e_socioeconomicos_e87ace60_0de6_45e2_af81_454c37b7dffd</item>
+    <item>agg_mun_dados_censitarios_e_socioeconomicos___indigenas_4962a0fe_18c2_4dec_bee4_86ba9864a9f8</item>
+    <item>Query_socioecon_bff70535_7a0b_4322_9f19_c5792f35b636</item>
+    <item>dep_tiago_zilli_mdb_d71f2e6b_a08d_4243_8e4f_0a0b23e9f2e3</item>
+    <item>dep_tiago_zilli_mdb_87e67647_f7e5_4956_9323_41483e82daf7</item>
+    <item>agg_eleicao_e_outras_bases_materialized_aa96e8e1_ebea_49fd_9f92_ad20754879b5</item>
+    <item>agg_eleicao_e_outras_bases_materialized_9dd0d274_4ac8_4d71_aa1f_eefd2a1df358</item>
+    <item>agg_mun_dados_censitarios_e_socioeconomicos_3ef59b19_192c_4eab_a17c_d34765b485a6</item>
+    <item>agg_mun_dados_censitarios_e_socioeconomicos_527d4aa6_8c1e_4f05_87fc_f01513854522</item>
+    <item>agg_mun_dados_censitarios_e_socioeconomicos_inse_3e627aba_8387_46e9_9ee9_01d40a3edad4</item>
+    <item>layername_df940335_a36a_436a_afc8_fd6f7c95c713</item>
+    <item>party_pt_intermediaria_f1620724_d35b_4c54_ac57_7933d6fac024</item>
+    <item>party_pt_intermediaria_ee92a142_470e_4b66_9f6f_ab28c9ce3888</item>
+    <item>dados_pt_regiao_imediata_fbf6c8ec_2bf8_48ad_ba48_2c54150b3a0a</item>
+   </custom-order>
+  </layer-tree-group>
+ </LayoutItem>
+ <LayoutItem uuid="{51f2352a-fba4-4d6f-b0aa-52a5d50db764}" mapFlags="0" size="298.177,210,mm" background="true" outlineWidthM="0.3,mm" referencePoint="0" followPreset="false" templateUuid="{51f2352a-fba4-4d6f-b0aa-52a5d50db764}" keepLayerSet="false" followPresetName="" zValue="1" groupUuid="" labelMargin="0,mm" type="65639" blendMode="0" drawCanvasItems="true" itemRotation="0" positionOnPage="0,0,mm" id="Map 1" isTemporal="0" frameJoinStyle="miter" position="0,0,mm" frame="false" excludeFromExports="0" positionLock="false" enableZRange="0" mapRotation="0" visibility="1" opacity="1">
+  <FrameColor blue="0" red="0" green="0" alpha="255"/>
+  <BackgroundColor blue="255" red="255" green="255" alpha="255"/>
+  <LayoutObject>
+   <dataDefinedProperties>
+    <Option type="Map">
+     <Option name="name" value="" type="QString"/>
+     <Option name="properties"/>
+     <Option name="type" value="collection" type="QString"/>
+    </Option>
+   </dataDefinedProperties>
+   <customproperties>
+    <Option/>
+   </customproperties>
+  </LayoutObject>
+  <Extent ymin="-29.59926210856297502" ymax="-25.24415614558413168" xmax="-47.68902712524440091" xmin="-53.87280060487841382"/>
+  <LayerSet/>
+  <AtlasMap atlasDriven="0" scalingMode="2" margin="0.10000000000000001"/>
+  <labelBlockingItems/>
+  <atlasClippingSettings enabled="0" forceLabelsInside="0" restrictLayers="0" clippingType="1">
+   <layersToClip/>
+  </atlasClippingSettings>
+  <itemClippingSettings enabled="0" forceLabelsInside="0" clippingType="1" clipSource=""/>
+ </LayoutItem>
+ <customproperties>
+  <Option type="Map">
+   <Option name="atlasRasterFormat" value="png" type="QString"/>
+   <Option name="imageAntialias" value="true" type="bool"/>
+   <Option name="imageCropMarginBottom" value="0" type="int"/>
+   <Option name="imageCropMarginLeft" value="0" type="int"/>
+   <Option name="imageCropMarginRight" value="0" type="int"/>
+   <Option name="imageCropMarginTop" value="0" type="int"/>
+   <Option name="imageCropToContents" value="false" type="bool"/>
+   <Option name="singleFile" value="true" type="bool"/>
+  </Option>
+ </customproperties>
+ <Atlas coverageLayer="" enabled="0" filenamePattern="'output_'||@atlas_featurenumber" sortFeatures="0" filterFeatures="0" pageNameExpression="" hideCoverage="0"/>
+</Layout>
